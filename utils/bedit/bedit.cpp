@@ -3,21 +3,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <user.h>
+#include <zlib.h>
 
 static int NUM_FRAMES=144;
 
 int main(int argc, char **argv)  {
-  if(argc != 2) Exit(1, "Usage: bedit <building_bitmap>\n");
+  U2_Init(argc, argv);
+  if(argc != 2) U2_Exit(1, "Usage: bedit <building_bitmap>\n");
   int ftype = 0;
   {
     struct stat s;
     stat(argv[1], &s);
 
-    FILE *f = fopen(argv[1], "r");
-    if(f==NULL) { printf("\"%s\" not found!\n", argv[1]); exit(1); }
+    gzFile f = gzopen(argv[1], "rb");
+    if(f==NULL) U2_Exit(-1, "\"%s\" not found!\n", argv[1]);
     char buf[16];
-    fread(buf, 1, 16, f);
-    fclose(f);
+    gzread(f, buf, 16);
+    gzclose(f);
 
     if (S_ISDIR(s.st_mode)) {
       ftype = 1;
@@ -25,12 +27,11 @@ int main(int argc, char **argv)  {
     else if(!strncmp(buf, "Insomnia", 8))  {
       ftype = 2;
       }
-    else { printf("\"%s\" not BMP of RESFILE!\n", argv[1]); exit(1); }
+    else U2_Exit(-1, "\"%s\" not DIR or RESFILE!\n", argv[1]);
     }
   int ctr;
-  InitUserEngine(argc, argv);
   CharBag *stats;
-  Graphic *img;
+  Graphic *img = NULL;
   Graphic *bg[NUM_FRAMES];
   int frm;
   char buf[256];
@@ -53,7 +54,7 @@ int main(int argc, char **argv)  {
 	  else bg[frm] = new Graphic(*bg[frm-1]);
 	  }
 	}
-      else { printf("Umm...  AAARRRGGGHHH!!!\n"); exit(1); }
+      else U2_Exit(-1, "Umm...  AAARRRGGGHHH!!!\n");
       }
     }
   else if(ftype == 2) {
@@ -61,7 +62,7 @@ int main(int argc, char **argv)  {
     stats = rf.GetCharBag();
     for(frm=0; frm<NUM_FRAMES; frm++) bg[frm] = rf.GetGraphic();
     }
-  else { printf("AAARRRGGGHHH!!!\n"); exit(1); }
+  else U2_Exit(-1, "Umm...  AAARRRGGGHHH!!!\n");
   {
     NewResFile rf("build.bf");
     (*stats)[0] = NUM_FRAMES;

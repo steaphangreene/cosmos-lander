@@ -1,18 +1,18 @@
-CFLAGS:=$(shell U2-CFlgs)
+CFLAGS:=$(shell U2-CFlags)
 LIBS=	$(shell U2-Libs)
 CC=     gcc $(CFLAGS)
 USER=	$(shell U2-Dir)
 DEPS=   $(USER)/*.cpp
 DEPH=   $(USER)/*.h
 OBJS=   ship.o viewport.o planet.o game.o troop.o shot.o
-ALL=    $(DEPS) $(DEPH) Makefile cosmos.h planet.h
+ALL=    Makefile cosmos.h planet.h
 TSTR:=  $(shell date +"%Y%m%d%H%M")
 HDRS:=	ship.h shipitem.h cosmos.h
 TSTR:=	$(shell date +"%Y%m%d%H%M")
 
 all:	cosmos
 
-cosmos:	cosmos.o $(OBJS) $(ALL)
+cosmos:	cosmos.o $(OBJS) $(DEPS) $(DEPH) $(ALL)
 	make -C $(USER)
 	$(CC) -o cosmos cosmos.o $(OBJS) $(LIBS)
 

@@ -15,7 +15,7 @@ void Shot::Add() {
   int ctr=0;
   for(ctr=0; ctr<maxsh && sht[ctr]!=NULL; ++ctr);
   lnum = ctr;
-  if(ctr >= MAX_SHOTS) Exit(1, "Shots overflow!!\n");
+  if(ctr >= MAX_SHOTS) U2_Exit(1, "Shots overflow!!\n");
   if(maxsh==ctr) ++maxsh;
   sht[ctr] = this;
   }

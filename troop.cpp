@@ -21,7 +21,7 @@ int miss(int misschance)  {
 
 void Troop::Add() {
   lnum = maxtr;
-  if(maxtr >= MAX_TROOPS) Exit(1, "Troop overflow!!\n");
+  if(maxtr >= MAX_TROOPS) U2_Exit(1, "Troop overflow!!\n");
   trp[maxtr++] = this;
   }
 
@@ -287,7 +287,7 @@ Troop::Troop(TroopStats *st, int t, int x, int y) {
 void Troop::Init(TroopStats *st, int t) {
   shot=NULL;
   if(st==NULL || st->type>MAX_TROOPS || st->type<0)
-	Exit(1, "Null troopstats!\n");
+	U2_Exit(1, "Null troopstats!\n");
   target=-1; stat=0; wstat=0; wtm=0; wsnd=-1; tsnd=-1;
   axp=(double)xp; ayp=(double)yp;
   side=t;
@@ -330,8 +330,7 @@ void Troop::Act() {
     target = -1;
   switch(wtype) {
     default: {
-      printf("Unknown WTYPE (%d)!\n", wtype);
-      exit(-1);
+      U2_Exit(-1, "Unknown WTYPE (%d)!\n", wtype);
       }break;
     case(WEAPON_NONE): break;
     case(WEAPON_LMASER):
@@ -588,8 +587,7 @@ void Troop::Act() {
     }
   switch(mtype) {
     default: {
-      printf("Unknown MTYPE (%d)!\n", mtype);
-      exit(-1);
+      U2_Exit(-1, "Unknown MTYPE (%d)!\n", mtype);
       }break;
     case(MOVEMENT_NONE): break;
     case(MOVEMENT_DRIVE): {

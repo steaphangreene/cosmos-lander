@@ -24,9 +24,9 @@ Speaker *spk=NULL;
 int player=0;
 
 int main(int argc, char **argv) {
-  InitUserEngine(argc, argv);
+  U2_Init(argc, argv);
   screen = new Screen(1024, 768, 32, "Cosmos");
-//  spk = new Speaker(1, 16, 44100);
+  spk = new Speaker(1, 16, 44100);
   screen->SetFrameRate(20);
   screen->SetFont("fonts/basic30.sgf");
   screen->SetPaletteEntry(0, 0, 0, 0);
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
   input = new InputQueue;
   Game *game = new Game;
   while(game->Initialize()) { game->Play(); }
-  Exit(0);
+  U2_Exit(0);
 
   delete game;
   delete key;

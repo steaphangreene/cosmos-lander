@@ -116,7 +116,7 @@ void Planet::Save(FILE *fl) {
       fprintf(fl, "%d %d", dome[ctrx][ctry], build[ctrx][ctry]);
       if((!bt[ctrx][ctry]) || build[ctrx][ctry]!=BUILDING_MILITARY_BASE) {
 	if(build[ctrx][ctry]==BUILDING_MILITARY_BASE)
-	  Exit(1, "Base without troops!\n");
+	  U2_Exit(1, "Base without troops!\n");
 	fprintf(fl, "\n");
 	}
       else {
