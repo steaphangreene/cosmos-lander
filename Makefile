@@ -45,4 +45,4 @@ package:	cosmos
 	cosmos/cosmos cosmos/*.tga cosmos/fonts cosmos/sounds		\
 	cosmos/buildings cosmos/planets					\
 	cosmos/graphics/deaths/dome cosmos/graphics/troops		\
-	cosmos/graphics/explosions/boom10
+	cosmos/graphics/explosions/boom10 cosmos/*.sav

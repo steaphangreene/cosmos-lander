@@ -10,7 +10,8 @@
 #define VPSTAT_BUILD	0
 #define VPSTAT_CONFIG	1
 #define VPSTAT_ATTACK	2
-#define VPSTAT_MAX	3
+#define VPSTAT_VIEW	3
+#define VPSTAT_MAX	4
 
 class ViewPort {
   public:
@@ -24,7 +25,7 @@ class ViewPort {
   private:
   int mode, omode, stat, ostat, tile, oplanet, planet, system;
   int tsel[VPSTAT_MAX], otsel[VPSTAT_MAX];
-  int psel[VPSTAT_MAX], opsel[VPSTAT_MAX];
+  int *psel[VPSTAT_MAX], *opsel[VPSTAT_MAX];
   int tnum[VPSTAT_MAX], *pnum[VPSTAT_MAX], *poff[VPSTAT_MAX];
   int selx, sely, seltp;
   Sprite *pane[VPSTAT_MAX], *tab[VPSTAT_MAX];

@@ -72,8 +72,8 @@ void Game::Play() {
     while(ia != NULL) {
       if(ia->g.type == INPUTACTION_KEYDOWN) {
 	if(ia->k.key == KEY_ESC) quit=1;
-	else if(ia->k.key == KEY_S) Save(NULL);
-	else if(ia->k.key == KEY_L) Load(NULL);
+	else if(ia->k.key == KEY_S) { Save(NULL); vp->Update(); }
+	else if(ia->k.key == KEY_L) { Load(NULL); vp->Key(ia->k.key); vp->Update(); }
 	else vp->Key(ia->k.key);
 	}
       else if(ia->g.type == INPUTACTION_MOUSEDOWN) {

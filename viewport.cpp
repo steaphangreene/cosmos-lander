@@ -1,3 +1,4 @@
+#include <string.h>
 #include <math.h>
 
 #include "cosmos.h"
@@ -45,17 +46,13 @@ ViewPort::ViewPort() {
   ostat = VPSTAT_CONFIG;
   selx = -1;
   sely = -1;
-  psel[VPSTAT_BUILD] = 0;
-  psel[VPSTAT_CONFIG] = 0;
-  psel[VPSTAT_ATTACK] = 0;
-  opsel[VPSTAT_BUILD] = 0;
-  opsel[VPSTAT_CONFIG] = 0;
-  opsel[VPSTAT_ATTACK] = 0;
   tsel[VPSTAT_BUILD] = 0;
   tsel[VPSTAT_CONFIG] = 0;
+  tsel[VPSTAT_VIEW] = 0;
   tsel[VPSTAT_ATTACK] = 0;
   otsel[VPSTAT_BUILD] = 0;
   otsel[VPSTAT_CONFIG] = 0;
+  otsel[VPSTAT_VIEW] = 0;
   otsel[VPSTAT_ATTACK] = 0;
   planet = 0;
   oplanet = 1;
@@ -64,18 +61,43 @@ ViewPort::ViewPort() {
   screen->SetPaletteEntry(0x81, 0x40, 0x40, 0x80);
   screen->SetPaletteEntry(0x80, 0x80, 0x80, 0x80);
   int ctr, ind;
+  psel[VPSTAT_BUILD] = new int[BTYPE_MAX];
+  opsel[VPSTAT_BUILD] = new int[BTYPE_MAX];
+  memset(psel[VPSTAT_BUILD], 0, sizeof(int)*BTYPE_MAX);
+  memset(opsel[VPSTAT_BUILD], 0, sizeof(int)*BTYPE_MAX);
   pane[VPSTAT_BUILD] = new Sprite[BUILDING_MAX];
   tab[VPSTAT_BUILD] = new Sprite[BTYPE_MAX];
   tnum[VPSTAT_BUILD] = BTYPE_MAX;
   tnum[VPSTAT_CONFIG] = 0;
+  tnum[VPSTAT_VIEW] = 0;
   tnum[VPSTAT_ATTACK] = MAX_SHIPS;
   pnum[VPSTAT_BUILD] = new int[BTYPE_MAX];
   poff[VPSTAT_BUILD] = new int[BTYPE_MAX];
+
+  psel[VPSTAT_CONFIG] = new int[1];
+  opsel[VPSTAT_CONFIG] = new int[1];
+  memset(psel[VPSTAT_CONFIG], 0, sizeof(int)*1);
+  memset(opsel[VPSTAT_CONFIG], 0, sizeof(int)*1);
   pane[VPSTAT_CONFIG] = NULL;
   tab[VPSTAT_CONFIG] = NULL;
   pnum[VPSTAT_CONFIG] = new int[1];
   pnum[VPSTAT_CONFIG][0] = 0;
   poff[VPSTAT_CONFIG] = NULL;
+
+  psel[VPSTAT_VIEW] = new int[1];
+  opsel[VPSTAT_VIEW] = new int[1];
+  memset(psel[VPSTAT_VIEW], 0, sizeof(int)*1);
+  memset(opsel[VPSTAT_VIEW], 0, sizeof(int)*1);
+  pane[VPSTAT_VIEW] = NULL;
+  tab[VPSTAT_VIEW] = NULL;
+  pnum[VPSTAT_VIEW] = new int[1];
+  pnum[VPSTAT_VIEW][0] = 0;
+  poff[VPSTAT_VIEW] = NULL;
+
+  psel[VPSTAT_ATTACK] = new int[MAX_SHIPS];
+  opsel[VPSTAT_ATTACK] = new int[MAX_SHIPS];
+  memset(psel[VPSTAT_ATTACK], 0, sizeof(int)*MAX_SHIPS);
+  memset(opsel[VPSTAT_ATTACK], 0, sizeof(int)*MAX_SHIPS);
   pane[VPSTAT_ATTACK] = new Sprite[MAX_SHIPS*MAX_DROPSHIPS];
   tab[VPSTAT_ATTACK] = new Sprite[MAX_SHIPS];
   pnum[VPSTAT_ATTACK] = new int[MAX_SHIPS];
@@ -193,6 +215,13 @@ ViewPort::ViewPort() {
 
 void ViewPort::Update()  {
   int ctr, ctr1, ctr2;
+  if(plan[planet]->Owner()!=player) {
+    if(stat==VPSTAT_CONFIG||stat==VPSTAT_BUILD) stat=VPSTAT_VIEW;
+    }
+  else {
+    if(stat==VPSTAT_VIEW||stat==VPSTAT_ATTACK) stat=VPSTAT_BUILD;
+    }
+
   if(omode != mode) {
     switch(mode) {
       case(VPMODE_PLANET): {
@@ -218,6 +247,8 @@ void ViewPort::Update()  {
 	oplanet=planet;
 	screen->RestoreRectangle(0, 0, 800, 768);
 	screen->Refresh();
+	if(plan[oplanet]->Owner()==player) stat=VPSTAT_BUILD;
+	else stat=VPSTAT_VIEW;
 	}
       if(stat!=ostat) {
 	for(ctr=0; ctr<pmax[ostat]; ++ctr) {
@@ -250,14 +281,19 @@ void ViewPort::Update()  {
 		0x00007F00, 0xFF00FF00, "   Build   ");
 	  }
 	else if(stat == VPSTAT_CONFIG) {
-	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF00007F);
+	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF7F7F00);
 	  screen->Printf(BAR_X, TOP_BAR1_Y,
-		0x0000007F, 0xFF0000FF, " Configure ");
+		0x007F7F00, 0xFFFFFF00, " Configure ");
 	  }
 	else if(stat == VPSTAT_ATTACK) {
 	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF7F0000);
 	  screen->Printf(BAR_X, TOP_BAR1_Y,
 		0x007F0000, 0xFFFF0000, "  ATTACK!  ");
+	  }
+	else if(stat == VPSTAT_VIEW) {
+	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF00007F);
+	  screen->Printf(BAR_X, TOP_BAR1_Y,
+		0x0000007F, 0xFF0000FF, "   View    ");
 	  }
 
 	ostat=stat;
@@ -274,24 +310,18 @@ void ViewPort::Update()  {
 	  if(stat == VPSTAT_ATTACK && attx[ctr+poff[stat][tsel[stat]]]>=0)
 		attpsp[ctr+poff[stat][tsel[stat]]]->Draw();
 	  }
-	psel[stat]-=poff[stat][tsel[stat]];
-	if(psel[stat] >= pnum[stat][tsel[stat]])
-	  psel[stat]=pnum[stat][tsel[stat]]-1;
-	else if(psel[stat] < 0 ) psel[stat]=0;
-	psel[stat]+=poff[stat][tsel[stat]];
-
 	for(ctr=0; ctr<tmax[stat]; ++ctr)
 	  tab[stat][ctr].SetPriority(10000+abs(ctr-tsel[stat]));
 
 	otsel[stat]=tsel[stat];
 	}
 
-      if(psel[stat] != opsel[stat]) {
+      if(psel[stat][tsel[stat]] != opsel[stat][tsel[stat]]) {
 	for(ctr=0; ctr<pnum[stat][tsel[stat]]; ++ctr) {
 	  int ind=ctr+poff[stat][tsel[stat]];
-	  pane[stat][ind].SetPriority(10000+abs(ind-psel[stat]));
+	  pane[stat][ind].SetPriority(10000+abs(ctr-psel[stat][tsel[stat]]));
 	  }
-	opsel[stat]=psel[stat];
+	opsel[stat][tsel[stat]]=psel[stat][tsel[stat]];
 	}
 
       if(stat == VPSTAT_CONFIG) {
@@ -355,9 +385,9 @@ void ViewPort::Key(int k)  {
     }
   else if(k==KEY_L) {
     if(mode==VPMODE_PLANET && stat!=VPSTAT_ATTACK) {
-      FILE *fl=fopen("planet.sav", "r");
-      if(fl!=NULL) plan[planet]->Load(fl);
-      fclose(fl);
+//      FILE *fl=fopen("planet.sav", "r");
+//      if(fl!=NULL) plan[planet]->Load(fl);
+//      fclose(fl);
       }
     else if(mode==VPMODE_PLANET && stat==VPSTAT_ATTACK) {
       FILE *fl=fopen("attack.sav", "r");
@@ -384,36 +414,28 @@ void ViewPort::Click(int x, int y, int b)  {
   int pn=(pnum[stat][tsel[stat]]-1)>?1;
   if(x >= BAR_X && y >= BAR_Y) {
     if(stat==VPSTAT_BUILD) {
-      int ps=psel[stat]-poff[stat][tsel[stat]];
+      int ps=psel[stat][tsel[stat]];
       while(y < BAR_Y+(PANE_SPREAD*ps)/pn && ps>0) --ps;
       while(y >= PANE_TAIL+(PANE_SPREAD*ps)/pn
 		&& ps<pnum[stat][tsel[stat]]) ++ps;
-      psel[stat] = ps+poff[stat][tsel[stat]];
-      if(psel[stat] != opsel[stat]) {
-	int ctr, ind;
-	for(ctr=0; ctr<pnum[VPSTAT_BUILD][tsel[stat]]; ctr++) {
-	  ind=ctr+poff[VPSTAT_BUILD][tsel[stat]];
-	  pane[stat][ind].SetPriority(10000+abs(ind-psel[stat]));
-	  }
-	screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
-	opsel[stat]=psel[stat];
-	}
+      psel[stat][tsel[stat]] = ps;
+      Update();
       }
     else if(stat==VPSTAT_ATTACK) {
-      int ps=psel[stat]-poff[stat][tsel[stat]];
+      int ps=psel[stat][tsel[stat]];
       if(y < BAR_Y+(PANE_SPREAD*ps)/pn && ps>0) {
 	while(y < BAR_Y+(PANE_SPREAD*ps)/pn && ps>0) --ps;
-	psel[stat] = ps+poff[stat][tsel[stat]];
+	psel[stat][tsel[stat]] = ps;
 	}
       else if(y >= PANE_TAIL+(PANE_SPREAD*ps)/pn
 		&& ps<pnum[stat][tsel[stat]]) {
 	while(y >= PANE_TAIL+(PANE_SPREAD*ps)/pn
 		&& ps<pnum[stat][tsel[stat]]) ++ps;
-	psel[stat] = ps+poff[stat][tsel[stat]];
+	psel[stat][tsel[stat]] = ps;
 	}
       else {	
 	int ctr, yp=PANE_AREA_Y+21+(PANE_SPREAD*ps)/pn;
-	TroopStats *ts = &attackers[psel[stat]];
+	TroopStats *ts = &attackers[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]];
 	if(y>=yp) for(ctr=0; ctr<ts->modnum; ++ctr) {
 	  if(ts->contains[ctr]) yp += (6+18*ts->contains[ctr]->modnum);
 	  else yp += 24;
@@ -443,8 +465,8 @@ void ViewPort::Click(int x, int y, int b)  {
 	      Update();
 	      }
 	    int max=2, y=124;
-	    TroopStats *ts = &attackers[psel[stat]];
-	    Graphic *g = pane[VPSTAT_ATTACK][psel[stat]].GetImage();
+	    TroopStats *ts = &attackers[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]];
+	    Graphic *g = pane[VPSTAT_ATTACK][psel[stat][tsel[stat]]+poff[stat][tsel[stat]]].GetImage();
 	    g->ClearArea(4, 104, BAR_XS-8, PANE_YS-108);
 	    screen->SetFont("fonts/basic16.sgf");
 	    screen->GPrint(g, 4, 104, 0x00000000, 0xFFFFFFFF, "Troops:");
@@ -511,14 +533,14 @@ void ViewPort::Click(int x, int y, int b)  {
       if(stat == VPSTAT_ATTACK) {
 	if(PlanetaryCombat()) plan[planet]->SetOwner(player);
 	plan[planet]->Deselect(); selx=-1; sely=-1;
-	stat=VPSTAT_BUILD; Update();
+	stat=VPSTAT_VIEW; Update();
 	}
-      else {
+      else if(stat == VPSTAT_VIEW) {
 	plan[planet]->Deselect(); selx=-1; sely=-1;
 	stat=VPSTAT_ATTACK; Update();
 	}
       }
-    else if(y>=40 && stat!=VPSTAT_CONFIG){
+    else if(y>=40 && stat!=VPSTAT_CONFIG && stat!=VPSTAT_VIEW){
       IntList which = screen->CollideRectangle(x, y, 1, 1);
       if(which.Size()>1 && which != tab[stat][tsel[stat]].Number()) {
 	int ctr;
@@ -564,11 +586,11 @@ void ViewPort::Click(int x, int y, int b)  {
 	}
       else if(stat == VPSTAT_BUILD) {
 	int ctr; Troop *tr;  TroopStats *st=NULL;
-	if(psel[VPSTAT_BUILD]) for(ctr=0; st==NULL && ctr<TROOP_MAX; ++ctr)
-	  if(tr->defstat[ctr].cls==psel[VPSTAT_BUILD]) st=&tr->defstat[ctr];
+	if(psel[stat][tsel[stat]]+poff[stat][tsel[stat]]) for(ctr=0; st==NULL && ctr<TROOP_MAX; ++ctr)
+	  if(tr->defstat[ctr].cls==psel[stat][tsel[stat]]+poff[stat][tsel[stat]]) st=&tr->defstat[ctr];
 	if(plan[planet]->Terrain(x, y) != TERRAIN_LAND) return;
-	plan[planet]->PutBuilding(x, y, psel[VPSTAT_BUILD], st);
-	if(psel[VPSTAT_BUILD] == BUILDING_MILITARY_BASE) {
+	plan[planet]->PutBuilding(x, y, psel[stat][tsel[stat]]+poff[stat][tsel[stat]], st);
+	if(psel[stat][tsel[stat]]+poff[stat][tsel[stat]] == BUILDING_MILITARY_BASE) {
 	  plan[planet]->bt[x][y]->contains[0] = new TroopStats;
 	  *(plan[planet]->bt[x][y]->contains[0]) = tr->defstat[TROOP_MARINE];
 	  plan[planet]->bt[x][y]->contains[1] = new TroopStats;
@@ -578,7 +600,7 @@ void ViewPort::Click(int x, int y, int b)  {
 	  plan[planet]->bt[x][y]->contains[3] = new TroopStats;
 	  *(plan[planet]->bt[x][y]->contains[3]) = tr->defstat[TROOP_MARINE];
 	  }
-	plan[planet]->items[x][y].SetImage(buildg[psel[VPSTAT_BUILD]][0]);
+	plan[planet]->items[x][y].SetImage(buildg[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]][0]);
 	plan[planet]->items[x][y].SetPriority(10000-(y<<2));
 	plan[planet]->items[x][y].Move((x<<5)+16, (y<<5)+16);
 	}
@@ -586,30 +608,30 @@ void ViewPort::Click(int x, int y, int b)  {
 	int ctr;
 	for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
 	  if((x<<5)+16==attx[ctr] && (y<<5)+16==atty[ctr]) {
-	    psel[stat] = ctr;
 	    for(tsel[stat]=0; tsel[stat]<(tnum[stat]-1); ++tsel[stat])
 	      if(poff[stat][tsel[stat]+1] > ctr) break;
+	    psel[stat][tsel[stat]] = ctr-poff[stat][tsel[stat]];
 	    Update(); return;
 	    }
 	  }
-	attx[psel[stat]] = (x<<5)+16;
-	atty[psel[stat]] = (y<<5)+16;
-	attsp[psel[stat]]->Move(attx[psel[stat]], atty[psel[stat]]);
-	attpsp[psel[stat]]->SetLine(BAR_X-attx[psel[stat]],
-	  (BAR_Y+(PANE_SPREAD*(psel[stat]-poff[stat][tsel[stat]]))/pn)
-	  -atty[psel[stat]], 32, 0xFFFF0000);
-	attpsp[psel[stat]]->Move(attx[psel[stat]], atty[psel[stat]]);
-	int po=poff[stat][tsel[stat]], ps=psel[stat]-po;
+	attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]] = (x<<5)+16;
+	atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]] = (y<<5)+16;
+	attsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->Move(attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]);
+	attpsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->SetLine(BAR_X-attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]],
+	  (BAR_Y+(PANE_SPREAD*(psel[stat][tsel[stat]]))/pn)
+	  -atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], 32, 0xFFFF0000);
+	attpsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->Move(attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]);
+	int po=poff[stat][tsel[stat]], ps=psel[stat][tsel[stat]];
 	++ps; ps%=pnum[stat][tsel[stat]];
-	for(; ps+po != psel[stat]; ++ps,ps%=pnum[stat][tsel[stat]])
+	for(; ps != psel[stat][tsel[stat]]; ++ps,ps%=pnum[stat][tsel[stat]])
 	  if(attx[ps+po]<0) break;
-	if(ps+po == psel[stat]) {
+	if(ps == psel[stat][tsel[stat]]) {
 	  ++tsel[stat]; tsel[stat]%=tnum[stat];
 	  po=poff[stat][tsel[stat]];
 	  for(ps=0; ps<pnum[stat][tsel[stat]]; ++ps)
 	    if(attx[ps+po]<0) break;
 	  }
-	psel[stat] = ps+po;
+	psel[stat][tsel[stat]] = ps;
 	Update();
 	}
       }
