@@ -87,6 +87,8 @@ int main(int argc, char **argv) {
   input = new InputQueue;
   Game *game = new Game;
   while(game->Initialize()) { game->Play(); }
+  Exit(0);
+
   delete game;
   delete key;
   delete screen;

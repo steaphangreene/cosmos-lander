@@ -255,7 +255,7 @@ int Troop::Hit(int wd, int md) {
 */
     if(cls>=0) {
       sound[SOUND_DOMEDIE]->Play();
-      image.SetImage(dmdth[0]);
+      image.UseImage(dmdth[0]);
       image.Draw();
       armor=0;
       }
@@ -298,8 +298,8 @@ void Troop::Init(TroopStats *st, int t) {
   wdam=st->wdam; wmdam=st->wmdam; wacc=st->wacc;
   mtype=st->mtype; speed=st->speed; dodge=st->dodge;
 
-  if(cls>=0) image.SetImage(*buildg[cls][0]);
-  else image.SetImage(*troopg[type]);
+  if(cls>=0) image.UseImage(*buildg[cls][0]);
+  else image.UseImage(*troopg[type]);
 
   if(mtype==MOVEMENT_DROP) { stat=100; zp=100; }
 
@@ -319,7 +319,7 @@ void Troop::Act() {
   if(armor<1) {
     armor--;
     if(armor > -17) {
-      image.SetImage(dmdth[-armor]);
+      image.UseImage(dmdth[-armor]);
       image.Draw();
       }
     else Erase();
@@ -752,7 +752,7 @@ void Troop::Act() {
     if(cls<0) image.Move(xp, yp-zp);
 //    if(cls==0) image.Position(xp, yp-zp);
     else {
-      image.SetImage(*buildg[cls][stat]);
+      image.UseImage(*buildg[cls][stat]);
       image.Move(xp, yp-zp);
 //      image.Position(xp, yp-zp);
       }

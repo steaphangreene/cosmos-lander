@@ -108,7 +108,6 @@ void Planet::Update() {
 
 void Planet::Save(FILE *fl) {
   int ctrx, ctry;
-  owner = !owner; // Remove me!!!!!!!!!!!!!!
   fprintf(fl, "%s\n", rfn);
   fprintf(fl, "%s\n", name);
   fprintf(fl, "%d\n", owner);
@@ -130,7 +129,6 @@ void Planet::Save(FILE *fl) {
 	}
       }
     }
-  Update(); // Remove me!!!!!!!!!!!!!!
   }
 
 void Planet::Load(FILE *fl) {

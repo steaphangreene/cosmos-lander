@@ -52,7 +52,7 @@ int main(int argc, char **argv)  {
     tltype = rf.GetCharBag();
     if(ftype == 2) pg = rf.GetGraphic();
     }
-  else { printf("AAARRRGGGHHH!!!\n"); exit(1); }
+  else if(!(ftype & 1)) { printf("AAARRRGGGHHH!!!\n"); exit(1); }
   screen->FullScreenGraphic(*pg);
   screen->Show();
   Graphic tlg("tile.bmp");

@@ -4,11 +4,9 @@
 #include "cosmos.h"
 #include "viewport.h"
 #include "troop.h"
+#include "ship.h"
 
 int ticker;
-
-#define MAX_SHIPS 8
-#define MAX_DROPSHIPS 16
 
 #define TOP_BAR1_Y	0
 #define TOP_BAR1_YS	32
@@ -29,13 +27,14 @@ int ticker;
 #define TAB_YS		32
 #define TAB_SPREAD	(BAR_XS-TAB_XS)
 
-static TroopStats attackers[MAX_SHIPS*MAX_DROPSHIPS];
-static Sprite *attsp[MAX_SHIPS*MAX_DROPSHIPS];
-static Sprite *attpsp[MAX_SHIPS*MAX_DROPSHIPS];
-static int attx[MAX_SHIPS*MAX_DROPSHIPS], atty[MAX_SHIPS*MAX_DROPSHIPS];
+static Sprite *attsp[MAX_SHIPS][MAX_DROPSHIPS];
+static Sprite *attpsp[MAX_SHIPS][MAX_DROPSHIPS];
 
 const int tmax[VPSTAT_MAX] = { BTYPE_MAX, 0, MAX_SHIPS };
 const int pmax[VPSTAT_MAX] = { BUILDING_MAX, 0, MAX_SHIPS*MAX_DROPSHIPS };
+
+extern int *numships;
+extern Ship ***ship;
 
 Troop *pdome[25][24];
 
@@ -70,7 +69,7 @@ ViewPort::ViewPort() {
   tnum[VPSTAT_BUILD] = BTYPE_MAX;
   tnum[VPSTAT_CONFIG] = 0;
   tnum[VPSTAT_VIEW] = 0;
-  tnum[VPSTAT_ATTACK] = MAX_SHIPS;
+  tnum[VPSTAT_ATTACK] = numships[player];
   pnum[VPSTAT_BUILD] = new int[BTYPE_MAX];
   poff[VPSTAT_BUILD] = new int[BTYPE_MAX];
 
@@ -104,7 +103,7 @@ ViewPort::ViewPort() {
   poff[VPSTAT_ATTACK] = new int[MAX_SHIPS];
   Graphic g("pane.tga"), *g2, tg("tab.tga");
   screen->MakeFriendly(&g);
-  Troop *tr=NULL;
+  screen->MakeFriendly(&tg);
   screen->SetFont("fonts/basic16.sgf");
   for(ctr=0; ctr<BTYPE_MAX; ++ctr) {
     g2 = new Graphic(tg);
@@ -116,7 +115,8 @@ ViewPort::ViewPort() {
 	screen->GPrint(g2, 20, 12, 0, 0xFFFFFFFF, "Generators");
     tab[VPSTAT_BUILD][ctr].SetImage(g2);
     tab[VPSTAT_BUILD][ctr].SetPriority(10000+ctr);
-    tab[VPSTAT_BUILD][ctr].Move(BAR_X+(TAB_SPREAD*ctr)/(BTYPE_MAX-1), 32);
+    tab[VPSTAT_BUILD][ctr].Position(BAR_X+(TAB_SPREAD*ctr)/(BTYPE_MAX-1), 32);
+    tab[VPSTAT_BUILD][ctr].Remove();
     delete g2;
     }
   for(ctr=0; ctr<BUILDING_MAX; ++ctr) {
@@ -135,7 +135,8 @@ ViewPort::ViewPort() {
     if(ctr<BUILDING_MISC_MAX) {
       ind=ctr;
       int pn=(pnum[VPSTAT_BUILD][0]-1)>?1;
-      pane[VPSTAT_BUILD][ctr].Move(BAR_X, BAR_Y+(PANE_SPREAD*ind)/pn);
+      pane[VPSTAT_BUILD][ctr].Position(BAR_X, BAR_Y+(PANE_SPREAD*ind)/pn);
+      pane[VPSTAT_BUILD][ctr].Remove();
       }
     else if(ctr<BUILDING_WEAPON_MAX) {
       int pn=(pnum[VPSTAT_BUILD][1]-1)>?1;
@@ -151,13 +152,12 @@ ViewPort::ViewPort() {
       }
     delete g2;
     }
-  for(ctr=0; ctr<MAX_SHIPS; ++ctr) {
+  for(ctr=0; ctr<numships[player]; ++ctr) {
     g2 = new Graphic(tg);
-    static char buf[32]; sprintf(buf, "Ship %d%c", ctr+1, 0);
-    screen->GPrint(g2, 20, 12, 0, 0xFFFFFFFF, buf);
+    screen->GPrint(g2, 20, 12, 0, 0xFFFFFFFF, ship[player][ctr]->Name());
     tab[VPSTAT_ATTACK][ctr].SetImage(g2);
     tab[VPSTAT_ATTACK][ctr].SetPriority(10000+ctr);
-    tab[VPSTAT_ATTACK][ctr].Position(BAR_X+(TAB_SPREAD*ctr)/(MAX_SHIPS-1), 32);
+    tab[VPSTAT_ATTACK][ctr].Position(BAR_X+(TAB_SPREAD*ctr)/((numships[player])-1), 32);
     tab[VPSTAT_ATTACK][ctr].Remove();
     delete g2;
     pnum[VPSTAT_ATTACK][ctr]=MAX_DROPSHIPS;
@@ -175,17 +175,11 @@ ViewPort::ViewPort() {
       pane[VPSTAT_ATTACK][ind].Position(BAR_X, BAR_Y+(PANE_SPREAD*ctrd)/pn);
       pane[VPSTAT_ATTACK][ind].Remove();
 
-      attackers[ind] = tr->defstat[TROOP_DROPSHIP];
-      attackers[ind].contains[0] = new TroopStats;
-      *(attackers[ind].contains[0]) = tr->defstat[TROOP_MARINE];
-      attackers[ind].contains[1] = new TroopStats;
-      *(attackers[ind].contains[1]) = tr->defstat[TROOP_MARINE];
-      attx[ind] = -1; atty[ind] = -1;
-      attsp[ind] = new Sprite(*troopg[TROOP_DROPSHIP]);
-      attpsp[ind] = new Sprite();
+      attsp[ctr][ctrd] = new Sprite(*troopg[TROOP_DROPSHIP]);
+      attpsp[ctr][ctrd] = new Sprite();
 
       int ctr1, ctr2, max=2, y=124;
-      TroopStats *ts = &attackers[ind];
+      TroopStats *ts = ship[player][ctr]->Drop(ctrd);
       Graphic *g = pane[VPSTAT_ATTACK][ind].GetImage();
       screen->SetFont("fonts/basic16.sgf");
       screen->GPrint(g, 4, 104, 0x00000000, 0xFFFFFFFF, "Troops:");
@@ -253,7 +247,11 @@ void ViewPort::Update()  {
       if(stat!=ostat) {
 	for(ctr=0; ctr<pmax[ostat]; ++ctr) {
 	  pane[ostat][ctr].Remove();
-	  if(ostat == VPSTAT_ATTACK) attpsp[ctr]->Erase();
+	  }
+	if(ostat == VPSTAT_ATTACK) for(ctr=0; ctr<tmax[ostat]; ++ctr) {
+	  for(ctr2=0; ctr2<pnum[ostat][ctr]; ++ctr2) {
+	    attpsp[ctr][ctr2]->Erase();
+	    }
 	  }
 	for(ctr=0; ctr<tmax[ostat]; ++ctr) {
 	  tab[ostat][ctr].Remove();
@@ -270,9 +268,6 @@ void ViewPort::Update()  {
 	for(ctr=0; ctr<tmax[stat]; ++ctr) {
 	  tab[stat][ctr].Position();
 	  }
-	if(stat == VPSTAT_ATTACK)
-	  for(ctr=0; ctr<pmax[stat]; ++ctr)
-	    { attx[ctr] = -1; atty[ctr] = -1; }
 
 	screen->SetFont("fonts/basic30.sgf");
 	if(stat == VPSTAT_BUILD) {
@@ -302,13 +297,16 @@ void ViewPort::Update()  {
       if(tsel[stat] != otsel[stat]) {
 	for(ctr=0; ctr<pnum[stat][otsel[stat]]; ++ctr) {
 	  pane[stat][ctr+poff[stat][otsel[stat]]].Remove();
-	  if(stat == VPSTAT_ATTACK)
-		attpsp[ctr+poff[stat][otsel[stat]]]->Erase();
+	  }
+	if(stat == VPSTAT_ATTACK) for(ctr=0; ctr<tmax[stat]; ++ctr) {
+	  for(ctr2=0; ctr2<pnum[stat][ctr]; ++ctr2) {
+	    attpsp[ctr][ctr2]->Erase();
+	    }
 	  }
 	for(ctr=0; ctr<pnum[stat][tsel[stat]]; ++ctr) {
 	  pane[stat][ctr+poff[stat][tsel[stat]]].Position();
-	  if(stat == VPSTAT_ATTACK && attx[ctr+poff[stat][tsel[stat]]]>=0)
-		attpsp[ctr+poff[stat][tsel[stat]]]->Draw();
+	  if(stat == VPSTAT_ATTACK && ship[player][tsel[stat]]->DropX(ctr)>=0)
+		attpsp[tsel[stat]][ctr]->Draw();
 	  }
 	for(ctr=0; ctr<tmax[stat]; ++ctr)
 	  tab[stat][ctr].SetPriority(10000+abs(ctr-tsel[stat]));
@@ -435,7 +433,7 @@ void ViewPort::Click(int x, int y, int b)  {
 	}
       else {	
 	int ctr, yp=PANE_AREA_Y+21+(PANE_SPREAD*ps)/pn;
-	TroopStats *ts = &attackers[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]];
+	TroopStats *ts = ship[player][tsel[stat]]->Drop(psel[stat][tsel[stat]]);
 	if(y>=yp) for(ctr=0; ctr<ts->modnum; ++ctr) {
 	  if(ts->contains[ctr]) yp += (6+18*ts->contains[ctr]->modnum);
 	  else yp += 24;
@@ -465,7 +463,7 @@ void ViewPort::Click(int x, int y, int b)  {
 	      Update();
 	      }
 	    int max=2, y=124;
-	    TroopStats *ts = &attackers[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]];
+	    TroopStats *ts = ship[player][tsel[stat]]->Drop(psel[stat][tsel[stat]]);
 	    Graphic *g = pane[VPSTAT_ATTACK][psel[stat][tsel[stat]]+poff[stat][tsel[stat]]].GetImage();
 	    g->ClearArea(4, 104, BAR_XS-8, PANE_YS-108);
 	    screen->SetFont("fonts/basic16.sgf");
@@ -564,17 +562,18 @@ void ViewPort::Click(int x, int y, int b)  {
 	plan[planet]->PutBuilding(x, y, BUILDING_NONE, NULL);
 	}
       }
-    else if(stat==VPSTAT_ATTACK) {
-      int del;
-      for(del=0; del<MAX_SHIPS*MAX_DROPSHIPS; ++del) {
-	if((x<<5)+16==attx[del] && (y<<5)+16==atty[del]) {
-	  break;
-	  }
-	}
-      if(del<MAX_SHIPS*MAX_DROPSHIPS) {
-	attx[del]=-1; atty[del]=-1; attsp[del]->Erase(); attpsp[del]->Erase();
-	}
-      }
+//*****************
+//    else if(stat==VPSTAT_ATTACK) {
+//      int del;
+//      for(del=0; del<MAX_SHIPS*MAX_DROPSHIPS; ++del) {
+//	if((x<<5)+16==attx[del] && (y<<5)+16==atty[del]) {
+//	  break;
+//	  }
+//	}
+//      if(del<MAX_SHIPS*MAX_DROPSHIPS) {
+//	attx[del]=-1; atty[del]=-1; attsp[del]->Erase(); attpsp[del]->Erase();
+//	}
+//      }
     }
   else if(b==1) {
     x>>=5; y>>=5;
@@ -605,31 +604,36 @@ void ViewPort::Click(int x, int y, int b)  {
 	plan[planet]->items[x][y].Move((x<<5)+16, (y<<5)+16);
 	}
       else if(stat == VPSTAT_ATTACK) {
-	int ctr;
-	for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
-	  if((x<<5)+16==attx[ctr] && (y<<5)+16==atty[ctr]) {
-	    for(tsel[stat]=0; tsel[stat]<(tnum[stat]-1); ++tsel[stat])
-	      if(poff[stat][tsel[stat]+1] > ctr) break;
-	    psel[stat][tsel[stat]] = ctr-poff[stat][tsel[stat]];
-	    Update(); return;
-	    }
-	  }
-	attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]] = (x<<5)+16;
-	atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]] = (y<<5)+16;
-	attsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->Move(attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]);
-	attpsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->SetLine(BAR_X-attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]],
+//***********
+//	int ctr;
+//	for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
+//	  if((x<<5)+16==attx[ctr] && (y<<5)+16==atty[ctr]) {
+//	    for(tsel[stat]=0; tsel[stat]<(tnum[stat]-1); ++tsel[stat])
+//	      if(poff[stat][tsel[stat]+1] > ctr) break;
+//	    psel[stat][tsel[stat]] = ctr-poff[stat][tsel[stat]];
+//	    Update(); return;
+//	    }
+//	  }
+
+	ship[player][tsel[stat]]->MoveDrop(psel[stat][tsel[stat]],
+	  (x<<5)+16, (y<<5)+16);
+	attsp[tsel[stat]][psel[stat][tsel[stat]]]->Move((x<<5)+16, (y<<5)+16);
+	attpsp[tsel[stat]][psel[stat][tsel[stat]]]->
+	  SetLine(BAR_X-((x<<5)+16),
 	  (BAR_Y+(PANE_SPREAD*(psel[stat][tsel[stat]]))/pn)
-	  -atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], 32, 0xFFFF0000);
-	attpsp[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]->Move(attx[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]], atty[psel[stat][tsel[stat]]+poff[stat][tsel[stat]]]);
+	  -((y<<5)+16), 32, 0xFFFF0000);
+	attpsp[tsel[stat]][psel[stat][tsel[stat]]]->
+	  Move((x<<5)+16, (y<<5)+16);
+
 	int po=poff[stat][tsel[stat]], ps=psel[stat][tsel[stat]];
 	++ps; ps%=pnum[stat][tsel[stat]];
 	for(; ps != psel[stat][tsel[stat]]; ++ps,ps%=pnum[stat][tsel[stat]])
-	  if(attx[ps+po]<0) break;
+	  if(ship[player][tsel[stat]]->DropX(ps)<0) break;
 	if(ps == psel[stat][tsel[stat]]) {
 	  ++tsel[stat]; tsel[stat]%=tnum[stat];
 	  po=poff[stat][tsel[stat]];
 	  for(ps=0; ps<pnum[stat][tsel[stat]]; ++ps)
-	    if(attx[ps+po]<0) break;
+	    if(ship[player][tsel[stat]]->DropX(ps)<0) break;
 	  }
 	psel[stat][tsel[stat]] = ps;
 	Update();
@@ -654,11 +658,14 @@ Debug("PRE-PRE");
   int numtr[2]={0,0}, ctr, ctr2;
   Troop *tr; tr->InitTroopList();
 Debug("PRE");
-  for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
-    if(attx[ctr]>=0) {
-      new Troop(&attackers[ctr], 1, attx[ctr], atty[ctr]);
-      attsp[ctr]->Erase();
-      attpsp[ctr]->Erase();
+  for(ctr=0; ctr<MAX_SHIPS; ++ctr) {
+    if(ship[player][ctr]) for(ctr2=0; ctr2<MAX_DROPSHIPS; ++ctr2) {
+      if(ship[player][ctr]->DropX(ctr2)>=0) {
+        new Troop(ship[player][ctr]->Drop(ctr2), 1, 
+	  ship[player][ctr]->DropX(ctr2), ship[player][ctr]->DropY(ctr2));
+        attsp[ctr][ctr2]->Erase();
+        attpsp[ctr][ctr2]->Erase();
+        }
       }
     }
   for(ctr=0; ctr<25; ++ctr) {
@@ -697,8 +704,18 @@ Debug("BEGIN");
     screen->Refresh();
     ++ticker;
     }
+Debug("POST");
   tr->DeleteAll();
 //  screen->RestoreRectangle(0, 0, BAR_X, 768);
+  for(ctr=0; ctr<MAX_SHIPS; ++ctr) {
+    if(ship[player][ctr]) for(ctr2=0; ctr2<MAX_DROPSHIPS; ++ctr2) {
+      if(ship[player][ctr]->DropX(ctr2)>=0) {
+	ship[player][ctr]->MoveDrop(ctr2, -1, -1);
+        attsp[ctr][ctr2]->Erase();
+        attpsp[ctr][ctr2]->Erase();
+        }
+      }
+    }
   for(ctr=0; ctr<25; ++ctr) {
     for(ctr2=0; ctr2<24; ++ctr2) {
       if(plan[planet]->Building(ctr,ctr2) != BUILDING_NONE) {
@@ -710,7 +727,9 @@ Debug("BEGIN");
   }
 
 void ViewPort::SavePlan(FILE *fl) {
-  int ctr, tp1=-1, tp2=-1;
+  exit(1);
+/***************
+  int ctr, tp1=-1, tp2=-1;  
   for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
     if(attackers[ctr].contains[0] != NULL)
 	tp1 = attackers[ctr].contains[0]->type;
@@ -718,36 +737,34 @@ void ViewPort::SavePlan(FILE *fl) {
 	tp2 = attackers[ctr].contains[1]->type;
     fprintf(fl, "%d %d %d %d\n", attx[ctr], atty[ctr], tp1, tp2);
     }
+*/
   }
 
 void ViewPort::LoadPlan(FILE *fl) {
-  int ctr, tp1, tp2;
-  Troop *tr=NULL;
-  for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
-    int pn=(pnum[VPSTAT_ATTACK][0]-1)>?1;
-    fscanf(fl, "%d %d %d %d\n", &attx[ctr], &atty[ctr], &tp1, &tp2);
-    if(attackers[ctr].contains[0] != NULL) delete attackers[ctr].contains[0];
-    if(attackers[ctr].contains[1] != NULL) delete attackers[ctr].contains[1];
-    attackers[ctr].contains[0] = NULL;
-    attackers[ctr].contains[1] = NULL;
-    if(tp1>=0) attackers[ctr].contains[0]
-	= new TroopStats(tr->defstat[tp1]);
-    if(tp2>=0) attackers[ctr].contains[1]
-	= new TroopStats(tr->defstat[tp2]);
-    if(attx[ctr]>=0) {
-      attsp[ctr]->Move(attx[ctr], atty[ctr]);
-      attpsp[ctr]->Erase();
-      attpsp[ctr]->SetLine(BAR_X-attx[ctr],
-	  (BAR_Y+(PANE_SPREAD*(ctr%MAX_DROPSHIPS))/pn)
-	  -atty[ctr], 32, 0xFFFF0000);
-      attpsp[ctr]->Position(attx[ctr], atty[ctr]);
-      attpsp[ctr]->Remove();
-      }
-    else {
-      attsp[ctr]->Erase();
-      attpsp[ctr]->Erase();
+  int ctrs, ctrd, tp1, tp2, ax, ay;
+  for(ctrs=0; ctrs<MAX_SHIPS; ++ctrs) {
+    for(ctrd=0; ctrd<MAX_DROPSHIPS; ++ctrd) {
+      int pn=(pnum[VPSTAT_ATTACK][0]-1)>?1;
+      fscanf(fl, "%d %d %d %d\n", &ax, &ay, &tp1, &tp2);
+      if(ship[player][ctrs]) {
+	ship[player][ctrs]->MoveDrop(ctrd, ax, ay);
+	if(ax) {
+	  attsp[ctrs][ctrd]->Move(
+	    ship[player][ctrs]->DropX(ctrd), ship[player][ctrs]->DropY(ctrd));
+	  attpsp[ctrs][ctrd]->Erase();
+	  attpsp[ctrs][ctrd]->SetLine(BAR_X-ship[player][ctrs]->DropX(ctrd),
+	    (BAR_Y+(PANE_SPREAD*ctrd)/pn)
+	    -ship[player][ctrs]->DropY(ctrd), 32, 0xFFFF0000);
+	  attpsp[ctrs][ctrd]->Position(
+	    ship[player][ctrs]->DropX(ctrd), ship[player][ctrs]->DropY(ctrd));
+	  attpsp[ctrs][ctrd]->Remove();
+	  }
+	else {
+	  attsp[ctrs][ctrd]->Erase();
+	  attpsp[ctrs][ctrd]->Erase();
+	  }
+	}
       }
     }
   tsel[VPSTAT_ATTACK] = 0; otsel[VPSTAT_ATTACK] = 1; Update();
   }
-

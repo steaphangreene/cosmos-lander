@@ -16,26 +16,8 @@ cosmos:	cosmos.o $(OBJS) $(ALL)
 	make -C $(USER)
 	$(CC) -o cosmos cosmos.o $(OBJS) $(LIBS)
 
-cosmos.o:	cosmos.cpp $(HDRS) $(DEPH)
-	$(CC) -c cosmos.cpp
-
-game.o:	game.cpp $(HDRS) $(DEPH)
-	$(CC) -c game.cpp
-
-ship.o:	ship.cpp $(HDRS) $(DEPH)
-	$(CC) -c ship.cpp
-
-planet.o:	planet.cpp $(HDRS) $(DEPH)
-	$(CC) -c planet.cpp
-
-viewport.o:	viewport.cpp troop.h $(HDRS) $(DEPH)
-	$(CC) -c viewport.cpp
-
-troop.o:	troop.cpp troop.h $(HDRS) $(DEPH)
-	$(CC) -c troop.cpp
-
-shot.o:	shot.cpp shot.h $(HDRS) $(DEPH)
-	$(CC) -c shot.cpp
+%.o:	%.cpp $(HDRS) $(DEPH)
+	$(CC) -c $<
 
 tar:	cosmos.h
 	cd .. ; tar czhvf ~/c/archive/cosmos-pre$(TSTR).tar.gz cosmos
