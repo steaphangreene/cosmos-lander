@@ -16,7 +16,7 @@ cosmos:	cosmos.o $(OBJS) $(ALL)
 	make -C $(USER)
 	$(CC) -o cosmos cosmos.o $(OBJS) $(LIBS)
 
-%.o:	%.cpp $(HDRS) $(DEPH)
+%.o:	%.cpp $(HDRS) $(DEPH) $(ALL)
 	$(CC) -c $<
 
 tar:	cosmos.h

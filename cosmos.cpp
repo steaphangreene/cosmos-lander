@@ -19,14 +19,14 @@ Graphic *dmdth[17];
 int builds[BUILDING_MAX][BUILDSTAT_MAX];
 Sound *sound[SOUND_MAX];
 int soundh[SOUND_MAX][2];
-Speaker *spk;
+Speaker *spk=NULL;
 
 int player=0;
 
 int main(int argc, char **argv) {
   InitUserEngine(argc, argv);
-  screen = new Screen(1024, 768, "Cosmos");
-  spk = new Speaker(1, 16, 44100);
+  screen = new Screen(1024, 768, 32, "Cosmos");
+//  spk = new Speaker(1, 16, 44100);
   screen->SetFrameRate(20);
   screen->SetFont("fonts/basic30.sgf");
   screen->SetPaletteEntry(0, 0, 0, 0);
@@ -49,34 +49,34 @@ int main(int argc, char **argv) {
 
   Debug("Loading sound \"GUN\"");
   sound[SOUND_GUN] = new Sound("sounds/gun.wav");
-  spk->MakeFriendly(*sound[SOUND_GUN]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_GUN]);
   Debug("Loading sound \"OPEN\"");
   sound[SOUND_OPEN] = new Sound("sounds/open.wav");
-  spk->MakeFriendly(*sound[SOUND_OPEN]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_OPEN]);
   Debug("Loading sound \"DEATH\"");
   sound[SOUND_DEATH] = new Sound("sounds/death.wav");
-  spk->MakeFriendly(*sound[SOUND_DEATH]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_DEATH]);
   Debug("Loading sound \"LASER\"");
   sound[SOUND_LASER] = new Sound("sounds/laser.wav");
-  spk->MakeFriendly(*sound[SOUND_LASER]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_LASER]);
   Debug("Loading sound \"MASER\"");
   sound[SOUND_MASER] = new Sound("sounds/maser.wav");
-  spk->MakeFriendly(*sound[SOUND_MASER]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_MASER]);
   Debug("Loading sound \"LASERMASER\"");
   sound[SOUND_LASERMASER] = new Sound("sounds/lmaser.wav");
-  spk->MakeFriendly(*sound[SOUND_LASERMASER]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_LASERMASER]);
   Debug("Loading sound \"BALLISTIC\"");
   sound[SOUND_BALLISTIC] = new Sound("sounds/ballistic.wav");
-  spk->MakeFriendly(*sound[SOUND_BALLISTIC]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_BALLISTIC]);
   Debug("Loading sound \"SHELL\"");
   sound[SOUND_SHELL] = new Sound("sounds/shell.wav");
-  spk->MakeFriendly(*sound[SOUND_SHELL]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_SHELL]);
   Debug("Loading sound \"AMBIENT\"");
   sound[SOUND_AMBIENT] = new Sound("sounds/ambient.wav");
   Debug("Loading sound \"DOMEDIE\"");
   sound[SOUND_DOMEDIE] = new Sound("sounds/domedie.wav");
-  spk->MakeFriendly(*sound[SOUND_AMBIENT]);
-  spk->SetAsAmbient(*sound[SOUND_AMBIENT]);
+  if(spk) spk->MakeFriendly(*sound[SOUND_AMBIENT]);
+  if(spk) spk->SetAsAmbient(*sound[SOUND_AMBIENT]);
   for(ctr=0; ctr<SOUND_MAX; ++ctr) { soundh[ctr][0]=-1; soundh[ctr][1]=-1; }
   key = new Keyboard;
   mouse = new Mouse;

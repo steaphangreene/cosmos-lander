@@ -2,7 +2,7 @@ Mathematics
     Algorithms
     Hypergeometry
     Differential Geometry
-    Domplex System Reduction
+    Complex System Reduction
     Entropy
     Wave Theory
     Chaos Theory
@@ -23,7 +23,7 @@ Physics
 	Shell Hyper Drive
 	Hyperparticle Detector
     Temporal Physics
-    Subatomic INteractions
+    Subatomic Interactions
     Ultra-Densa Mater
     Singularity Theory
     Gravity Theory
@@ -38,7 +38,7 @@ Biotech
     Bioweapons
     Biochem
     Hazardous-Environment Organisms
-    Nanoorganisma
+    Nanoorganisms
     Hyperorganisms
     Toxins
 Chemistry
@@ -80,13 +80,13 @@ Human Sciences
 	Cloning Facility (Adds fixed value to birth rate)
     Psychological Wareware
 	*Propoganda (Raises the "attractiveness" of user's civilization)
-	*Demoralization (Lowers happiness on enemy planes near friendly ships)
+	*Demoralization (Lowers happiness on enemy planets near friendly ships)
     Behavioral Engineering
-	Brainwashing (
+	Brainwashing (Multiplies Spys on Enemy Planets or Ships)
 	*Conversion (Convert Foreign Planetary Population)
 	*Patriotism (Counters Conversion)
 Engineering
-    Reverse Eng
+    Reverse Engineering
     Control Systems
     Hulls
     Satellites
