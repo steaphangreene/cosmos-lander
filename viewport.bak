@@ -1,0 +1,375 @@
+#include <math.h>
+
+#include "cosmos.h"
+#include "viewport.h"
+#include "troop.h"
+
+int ticker;
+
+#define TOP_BAR1_Y	0
+#define TOP_BAR1_YS	32
+#define TOP_BAR2_Y	32
+#define TOP_BAR2_YS	32
+#define BAR_Y		64
+#define BAR_X		800
+#define BAR_XS		224
+#define BAR_YS		704
+#define PANE_YS		384
+#define PANE_SPREAD	(BAR_YS-PANE_YS)
+#define PANE_TAIL	(PANE_YS+BAR_Y)
+#define PANE_AREA_Y	(BAR_Y+104)
+#define PANE_AREA_X	(BAR_X+4)
+
+ViewPort::ViewPort() {
+  mode = VPMODE_PLANET;
+  stat = VPSTAT_BUILD;
+  ostat = stat-1;
+  selx = -1;
+  sely = -1;
+  sel = 0;
+  osel = 0;
+  planet = 0;
+  tile = -1;
+  system = 1;
+  updated = 0;
+  maxpane = BUILDING_MAX;
+  screen->SetPaletteEntry(0x81, 0x40, 0x40, 0x80);
+  screen->SetPaletteEntry(0x80, 0x80, 0x80, 0x80);
+  int ctr, ctry, ctrx, pnum=(BUILDING_MAX-1);
+// pnum=((BUILDING_MAX-1)>?20);
+  Graphic g("pane.bmp"), *g2;
+  for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+    g2 = new Graphic(g);
+    for(ctry=0; ctry<buildimg[ctr]->ysize; ++ctry) {
+      memcpy(g2->image[ctry+3].ul+3, buildimg[ctr]->image[ctry].ul,
+	(buildimg[ctr]->xsize)*4);
+      for(ctrx=0; ctrx<buildimg[ctr]->xsize; ++ctrx)
+	g2->image[ctry+3].uc[((ctrx+3)<<2)+3]=0xFF;
+      }
+    pane[VPSTAT_BUILD][ctr].SetImage(g2);
+    if(ctr<=sel) pane[VPSTAT_BUILD][ctr].SetPriority(10000-ctr);
+    else pane[VPSTAT_BUILD][ctr].SetPriority(10000-(sel+sel-ctr));
+    pane[VPSTAT_BUILD][ctr].Move(BAR_X, BAR_Y+(PANE_SPREAD*ctr)/pnum);
+    delete g2;
+    }
+/*
+  for(ctr=0; ctr<16; ctr++) {
+    if(sel == ctr)
+      screen->DrawRectangle(803+(ctr&3)*56, 3+(ctr>>2)*56, 50, 50, 0x81);
+    else screen->DrawRectangle(803+(ctr&3)*56, 3+(ctr>>2)*56, 50, 50, 0x80);
+    if(ctr<BUILDING_MAX) screen->DrawTransparentGraphic(*buildg[ctr][16],
+	828+(ctr&3)*56-buildg[ctr][16]->xcenter,
+	28+(ctr>>2)*56-buildg[ctr][16]->ycenter);
+    }
+*/
+  Troop *tr; tr->InitTroopList();
+  }
+
+void ViewPort::Update()  {
+  switch(mode) {
+    case(VPMODE_PLANET): {
+      if(sel != osel) {
+	if(sel > osel) {
+	  int ctr;
+	  for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+	    if(ctr<=sel) pane[VPSTAT_BUILD][ctr].SetPriority(10000-ctr);
+	    else pane[VPSTAT_BUILD][ctr].SetPriority(10000-(sel+sel-ctr));
+	    }
+	  screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	  }
+	}
+      if(stat!=ostat) {
+	int ctr;
+	if(ostat == VPSTAT_BUILD) {
+	  for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+	    pane[VPSTAT_BUILD][ctr].Erase();
+	    }
+	  }
+	else if(ostat == VPSTAT_CONFIG) {
+	  plan[planet]->Deselect(); selx=-1; sely=-1;
+	  }
+	else if(ostat == VPSTAT_ATTACK) {
+	  }
+	if(stat == VPSTAT_BUILD) {
+	  for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+	    pane[VPSTAT_BUILD][ctr].Draw();
+	    }
+	  screen->SetFont("basic30.sgf");
+	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF007F00);
+	  screen->TGotoXY(BAR_X, TOP_BAR1_Y);
+	  screen->Printf(0x00000000, 0xFF00FF00, "   Build   ");
+	  screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	  }
+	else if(stat == VPSTAT_CONFIG) {
+	  screen->SetFont("basic30.sgf");
+	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF00007F);
+	  screen->TGotoXY(BAR_X, TOP_BAR1_Y);
+	  screen->Printf(0x00000000, 0xFF0000FF, " Configure ");
+	  }
+	else if(stat == VPSTAT_ATTACK) {
+	  screen->SetFont("basic30.sgf");
+	  screen->DrawRectangle(BAR_X, TOP_BAR1_Y, BAR_XS, TOP_BAR1_YS, 0xFF7F0000);
+	  screen->TGotoXY(BAR_X, TOP_BAR1_Y);
+	  screen->Printf(0x00000000, 0xFFFF0000, "  ATTACK!  ");
+	  screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	  }
+	ostat=stat;
+	}
+      }break;
+    default:  {
+      fprintf(stderr, "Unimplemented vpmode=%d\n", mode);
+      exit(1);
+      }break;
+    }
+
+  if(updated) return;
+  switch(mode) {
+    case(VPMODE_PLANET): {
+      screen->FullScreenGraphic(*(plan[planet]->Image()));
+      }break;
+    default:  {
+      fprintf(stderr, "Unimplemented vpmode=%d\n", mode);
+      exit(1);
+      }break;
+    }
+  }
+
+void ViewPort::Click(int x, int y, int b)  {
+  if(b==4||b==3) { PlanetaryCombat(); return; }
+  else if(x >= BAR_X && y>=BAR_Y) {
+    if(stat==VPSTAT_BUILD) {
+      int pnum=(BUILDING_MAX-1);
+      while(y < BAR_Y+(PANE_SPREAD*sel)/pnum && sel>0) --sel;
+      while(y >= PANE_TAIL+(PANE_SPREAD*sel)/pnum && sel<(BUILDING_MAX-1)) ++sel;
+      if(sel != osel) {
+	int ctr;
+	for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+	  if(ctr<=sel) pane[VPSTAT_BUILD][ctr].SetPriority(10000-ctr);
+	  else pane[VPSTAT_BUILD][ctr].SetPriority(10000-(sel+sel-ctr));
+	  }
+	screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	osel=sel;
+	}
+      }
+    else if(stat==VPSTAT_CONFIG) {
+      TroopStats *ts=plan[planet]->bt[selx][sely];
+      int ctr, yp=PANE_AREA_Y+18;
+      if(y>=yp) for(ctr=0; ctr<ts->modnum; ++ctr) {
+	if(ts->contains[ctr]) yp += 18*ts->contains[ctr]->modnum;
+	else yp+= 18;
+	printf("Try it with %d at %d\n", y, yp);
+	if(y<yp) {
+	  printf("Got it at %d\n", ctr);
+	  int ctr2, which=0;  Troop *tr=NULL;
+	  if(ts->contains[ctr]) which=ts->contains[ctr]->type+1;
+	  for(ctr2=which; ctr2<TROOP_MAX
+		&& (tr->defstat[ctr2].wtype == WEAPON_DEPLOY
+		|| (!tr->defstat[ctr2].modnum)); ++ctr2);
+	  if(ts->contains[ctr])
+	    { delete ts->contains[ctr]; ts->contains[ctr]=NULL; }
+	  if(ctr2<TROOP_MAX)
+	    ts->contains[ctr]=new TroopStats(tr->defstat[ctr2]);
+	  Update(); break;
+	  }
+	}
+      }
+    }
+  else if(x>=BAR_X);
+  else if(b==2 && stat==VPSTAT_BUILD) {
+    x>>=5; y>>=5;
+    int ctr; Troop *tr;  TroopStats *st=NULL;
+    if(sel) for(ctr=0; st==NULL && ctr<TROOP_MAX; ++ctr)
+      if(tr->defstat[ctr].cls==sel) st=&tr->defstat[ctr];
+    if(plan[planet]->Terrain(x, y) != TERRAIN_LAND) return;
+    plan[planet]->PutBuilding(x, y, sel, st);
+    plan[planet]->items[x][y].SetImage(buildg[sel][0]);
+    plan[planet]->items[x][y].SetPriority(-(y<<2));
+    plan[planet]->items[x][y].Move((x<<5)+16, (y<<5)+16);
+    }
+  else if(b==1) {
+    x>>=5; y>>=5;
+//    printf("selected %d,%d\n", x, y);
+    if(plan[planet]->Building(x,y) == BUILDING_NONE || (x==selx && y==sely)) {
+      stat=VPSTAT_BUILD; Update();
+      }
+    else {
+      selx=x; sely=y; stat=VPSTAT_CONFIG;
+      plan[planet]->Select(selx, sely); Update();
+      Graphic g("fullpane.bmp");
+      int ctrx, ctry; seltp=plan[planet]->Building(selx, sely);
+      for(ctry=0; ctry<buildimg[seltp]->ysize; ++ctry) {
+	memcpy(g.image[ctry+3].ul+3, buildimg[seltp]->image[ctry].ul,
+		(buildimg[seltp]->xsize)*4);
+	for(ctrx=0; ctrx<buildimg[seltp]->xsize; ++ctrx)
+	  g.image[ctry+3].uc[((ctrx+3)<<2)+3]=0xFF;
+	}   
+      screen->DrawGraphic(g, BAR_X, BAR_Y);
+      
+      screen->SetFont("basic16.sgf");
+
+      TroopStats *ts=plan[planet]->bt[selx][sely];
+      if(ts!=NULL && (ts->type == TROOP_DROPSHIP || ts->type == TROOP_BASE)) {
+	screen->TGotoXY(PANE_AREA_X, PANE_AREA_Y);
+	screen->Print(0x00000000, 0xFFFFFFFF, "Troops:");
+	int ctr, ctr2, max=4, y=PANE_AREA_Y+18;
+	if(ts->type == TROOP_DROPSHIP) max=2;
+	for(ctr=0; ctr<max; ++ctr) {
+	  if(ts->contains[ctr]) {
+	    for(ctr2=0; ctr2<ts->contains[ctr]->modnum; ++ctr2) {
+	      screen->TGotoXY(PANE_AREA_X, y);
+	      screen->Printf(0x00000000, 0xFFFFFFFF, "%s",
+		ts->contains[ctr]->name);
+	      y+=18;
+	      }
+	    }
+	  else {
+	    screen->TGotoXY(PANE_AREA_X, y);
+	    screen->Print(0x00000000, 0xFFFFFFFF, "Empty");
+	    y+=18;
+	    }
+	  }
+
+	screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	}
+      else if(ts!=NULL) {
+	screen->TGotoXY(PANE_AREA_X, PANE_AREA_Y);
+	screen->Print(0x00000000, 0xFFFFFFFF, "Range:");
+	screen->TGotoXY(PANE_AREA_X+70, PANE_AREA_Y);
+	screen->Printf(0x00000000, 0xFFFFFFFF, "%d", ts->wrng);
+
+	screen->TGotoXY(PANE_AREA_X, PANE_AREA_Y+18);
+	screen->Print(0x00000000, 0xFFFFFFFF, "S Dam:");
+	screen->TGotoXY(PANE_AREA_X+70, PANE_AREA_Y+18);
+	screen->Printf(0x00000000, 0xFFFFFFFF, "%d", ts->wdam);
+
+	screen->TGotoXY(PANE_AREA_X, PANE_AREA_Y+36);
+	screen->Print(0x00000000, 0xFFFFFFFF, "M Dam:");
+	screen->TGotoXY(PANE_AREA_X+70, PANE_AREA_Y+36);
+	screen->Printf(0x00000000, 0xFFFFFFFF, "%d", ts->wmdam);
+
+	screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+	}
+      }
+    }
+  }
+
+void ViewPort::Position(int xp, int yp)  {
+  int x = xp>>5; int y = yp>>5;
+//  if(x<0 || x>24 || y<0 || y>23) return;
+  plan[planet]->Over(x, y);
+  plan[planet]->Update();
+/*
+  if(xp<BAR_X) return;
+  int pnum=(BUILDING_MAX-1);
+  while(yp < (416*sel)/pnum && sel>0) --sel;
+  while(yp > 415+(PANE_SPREAD*sel)/pnum && sel<(BUILDING_MAX-1)) ++sel;
+  if(sel != osel) {
+    for(ctr=0; ctr<BUILDING_MAX; ctr++) {
+      if(ctr<=sel) pane[VPSTAT_BUILD][ctr].SetPriority(10000-ctr);
+      else pane[VPSTAT_BUILD][ctr].SetPriority(10000-(sel+sel-ctr));
+      }
+    screen->RestoreRectangle(BAR_X, 0, BAR_XS, 768);
+    osel=sel;
+    }
+*/
+  }
+
+void ViewPort::PlanetaryCombat() {
+Debug("PRE-PRE");
+  int numtr[2]={0,0}, ctr, ctr2;
+  Troop *tr;
+  tr->InitTroopList();
+Debug("PRE");
+  for(ctr=0; ctr<25; ++ctr) {
+    for(ctr2=0; ctr2<24; ++ctr2) {
+      if(plan[planet]->Building(ctr,ctr2) == BUILDING_DROPSHIP) {
+	Troop *shp; int tmp;
+	shp = new Troop(plan[planet]->bt[ctr][ctr2],
+		1, (ctr<<5)+16, (ctr2<<5)+16);
+//	for(tmp=0; tmp<2; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BHEAVYTANK, 1, shp);
+//	for(tmp=0; tmp<4; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BTANK], 1, shp);
+	for(tmp=0; tmp<8; tmp++)
+	  new Troop(&tr->defstat[TROOP_MARINE], 1, shp);
+//	for(tmp=0; tmp<8; tmp++)
+//	  new Troop(&tr->defstat[TROOP_ARTILLIARY], 1, shp);
+	plan[planet]->items[ctr][ctr2].Erase();
+	}
+      else if(plan[planet]->Building(ctr,ctr2) == BUILDING_MILITARY_BASE) {
+	Troop *shp; int tmp;
+	shp = new Troop(&tr->defstat[TROOP_BASE], 0,
+		(ctr<<5)+16, (ctr2<<5)+16);
+//	for(tmp=0; tmp<8; tmp++)
+//	  new Troop(&tr->defstat[TROOP_MATV], 0, shp);
+//	for(tmp=0; tmp<8; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BATV], 0, shp);
+//	for(tmp=0; tmp<4; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BHEAVYMECH], 0, shp);
+	for(tmp=0; tmp<16; tmp++)
+	  new Troop(&tr->defstat[TROOP_MARINE], 0, shp);
+//	for(tmp=0; tmp<16; tmp++)
+//	  new Troop(&tr->defstat[TROOP_ARTILLIARY], 0, shp);
+//	for(tmp=0; tmp<2; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BMECH], 0, shp);
+//	for(tmp=0; tmp<4; tmp++)
+//	  new Troop(&tr->defstat[TROOP_MHEAVYTANK], 0, shp);
+//	for(tmp=0; tmp<1; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BHEAVYTANK], 0, shp);
+//	for(tmp=0; tmp<2; tmp++)
+//	  new Troop(&tr->defstat[TROOP_BTANK], 0, shp);
+//	for(tmp=0; tmp<4; tmp++)
+//	  new Troop(&tr->defstat[TROOP_MTANK], 0, shp);
+	plan[planet]->items[ctr][ctr2].Erase();
+	}
+      else if(plan[planet]->Building(ctr,ctr2) == BUILDING_HEAVY_LASERMASER) {
+	new Troop(&tr->defstat[TROOP_HEAVY_LASERMASER], 0,
+		(ctr<<5)+16, (ctr2<<5)+16);
+	plan[planet]->items[ctr][ctr2].Erase();
+	}
+      else if(plan[planet]->Building(ctr,ctr2) == BUILDING_BALLISTIC_DEFENDER) {
+	new Troop(&tr->defstat[TROOP_BALLISTIC_DEFENDER], 0,
+		(ctr<<5)+16, (ctr2<<5)+16);
+	plan[planet]->items[ctr][ctr2].Erase();
+	}
+      }
+    }
+  int done=0;  ticker=0;
+  screen->SetFrameRate(20);
+  numtr[0] = tr->CountTeam(0);
+  numtr[1] = tr->CountTeam(1);
+  if(numtr[1]<=0 || numtr[0]<=0) done=100;
+  while(done<100) {
+Debug("BEGIN");
+//    for(ctr=0; ctr<maxtr; ctr++) trp[ctr]->Act();
+    tr->AllAct();
+    if(done) ++done;
+    else {
+      numtr[0] = tr->CountTeam(0);
+      numtr[1] = tr->CountTeam(1);
+      if(numtr[0]<=0 || numtr[1]<=0) done=1;
+      }
+/*
+    screen->TGotoXY(925, 36);
+    screen->DrawRectangle(900, 30, 100, 20, 0xFFFFFF);
+    screen->Printf(255, 0, "Friends %d", numtr[0]);
+    screen->TGotoXY(925, 72);
+    screen->DrawRectangle(900, 66, 100, 20, 0xFFFFFF);
+    screen->Printf(255, 0, "Enemies %d", numtr[1]);
+*/
+    screen->Refresh();
+    ++ticker;
+    }
+  tr->DeleteAll();
+  for(ctr=0; ctr<25; ++ctr) {
+    for(ctr2=0; ctr2<24; ++ctr2) {
+      if(plan[planet]->Building(ctr,ctr2) == BUILDING_DROPSHIP) {
+	plan[planet]->PutBuilding(ctr, ctr2, BUILDING_NONE, NULL);
+	plan[planet]->items[ctr][ctr2].Erase();
+	}
+      else if(plan[planet]->Building(ctr,ctr2) != BUILDING_NONE) {
+	plan[planet]->items[ctr][ctr2].Draw();
+	}
+      }
+    }
+  }

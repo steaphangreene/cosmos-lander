@@ -1,0 +1,75 @@
+#Crew	Power	Extern.	Shield	Name
+
+#Power Generators (Power = per tonne? of generator)
+#Crew	Power	Extern.	Shield	Name
+10K	-100	Y	N	Radiation Collector
+10K	-1K	Y	N	Fission-Fusion Reactor
+10K	-10K	Y	N	Antimater Chamber
+
+#Engines (Power = per unit of propulsion)
+#Crew	Power	Extern.	Shield	Name
+10K	10M	Y	Y	Ion Projector
+10K	10K	Y	Y	Fusion Thrusters
+10K	1K	Y	Y	Antimater Thrusters
+10K	1M	N	Y	Magneto-Kinetic Drive
+10K	100K	N	Y	Hypermass Kinetic Drive
+
+#Beam Weapons (Power = per 10th of Turn)
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	N	Heavy Maser
+
+#Projectile Weapons (Power = per shot)
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	N	Antimater Projector
+10K	10	Y	N	Plasma Streamer
+10K	10	N	Y	Hyperparticle Projector
+
+#Guided Weapons (Power = per shot)
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	N	Antimater Torpedo
+
+#Sheilds (Power = per 10th of Turn, Shield = non-exclusive)
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	Y	Kinetic Inverter
+10K	1K	Y	N	Electromagnetic Meduim Void
+10K	10	Y	Y	Electromagnetic Repulsor
+10K	10	Y	N	Microkinetic Nullifier
+10K	10	Y	Y	Projectile Interceptor
+10K	10	Y	Y	Hyperkinetic Particle Field
+
+#Star Drives (Power = needed to jump)
+#Crew	Power	Extern.	Shield	Name
+10K	1M	N	N	Retromorphic Jump Drive
+10K	1M	N	N	Retromorphic Hyper Drive
+10K	10M	N	N	Phased Jump Drive
+100K	100M	N	N	Phased Hyper Drive
+10K	100M	Y	Y	Shell Jump Drive
+100K	1G	Y	Y	Shell Hyper Drive
+
+#Bays (Power = needed to launch/release)
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	N	Deep Space Light Deployable Structure Bay
+10K	10	Y	N	Light Launch Bay
+10K	100	Y	N	Medium Launch Bay
+10K	1K	Y	N	Heavy Launch Bay
+10K	100	Y	N	Landing Module Bay
+10K	10K	N	Y	Light Launch Hyper-Bay
+10K	100K	N	Y	Medium Launch Hyper-Bay
+10K	1M	N	Y	Heavy Launch Hyper-Bay
+10K	100K	N	Y	Landing Module Hyper-Bay
+
+#Sensors
+#Crew	Power	Extern.	Shield	Name
+10K	10	Y	N	Electromagnetic Planar Phased Array
+10K	10	N	Y	Hyperparticle Interferometer
+
+#Counter-Sensors
+#Crew	Power	Extern.	Shield	Name
+10K	100	N	Y	Light Item Cloaker
+10K	1K	N	Y	Medium Item Cloaker
+10K	10K	N	Y	Heavy Item Cloaker
+10K	10K	N	N	Skip Cloaking Device
+
+#Special
+#Crew	Power	Extern.	Shield	Name
+10K	0	Y	Y	Power Collector

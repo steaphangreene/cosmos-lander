@@ -1,0 +1,694 @@
+#include <math.h>
+
+#include "troop.h"
+#include "shot.h"
+
+extern int ticker;
+
+int Troop::maxtr;
+Troop *Troop::trp[MAX_TROOPS];
+
+#define getroll() ((rand()%1000)+1)
+
+int miss(int misschance)  {
+  int dist=0, roll=getroll();
+  while(roll<misschance) { ++dist; roll<<=1; };
+  return dist;
+  }
+
+void Troop::Add() {
+  lnum = maxtr;
+  if(maxtr >= MAX_TROOPS) Exit(1, "Troop overflow!!\n");
+  trp[maxtr++] = this;
+  }
+
+void Troop::DeleteAll() {
+  Shot *tmpsh;
+  tmpsh->DeleteAll();
+  int ctr=0;
+  for(ctr=0; ctr<maxtr; ++ctr) if (trp[ctr] != NULL) {
+    delete trp[ctr];
+    }
+  }
+
+void Troop::AllAct() {
+  Shot *tmpsh;
+  tmpsh->AllAct();
+  int ctr=0;
+  for(ctr=0; ctr<maxtr; ++ctr) if (trp[ctr] != NULL) {
+    trp[ctr]->Act();
+    }
+  }
+
+void Troop::InitTroopList() {
+  Shot *tmpsh;
+  tmpsh->InitShotList();
+  int ctr=0;
+  for(ctr=0; ctr<MAX_TROOPS; ++ctr) trp[ctr] = NULL;
+  maxtr=0;
+  }
+
+int Troop::CountTeam(int t) {
+  int ctr, ret=0;
+  for(ctr=0; ctr<maxtr; ctr++) if(trp[ctr]->side==t) {
+    if(trp[ctr]->type != TROOP_NONE && trp[ctr]->men>0 && trp[ctr]->armor>0)
+      ++ret;
+    }
+  return ret;
+  }
+
+void Troop::Erase() {
+  if(wsnd>=0) { spk->Stop(wsnd); wsnd = -1; }
+  image.Erase();
+  if(wtype == WEAPON_DEPLOY) {
+    int ctr;
+    for(ctr=0; ctr<maxtr; ctr++) {
+      if(trp[ctr]->parent==this && trp[ctr]->xp<0) {
+	trp[ctr]->Erase();
+	}
+      }
+    }
+  type = TROOP_NONE;
+  }
+
+Troop::~Troop() {
+  Erase();
+  }
+
+int Troop::Hit(int wd, int md) {
+  if(type == TROOP_NONE || armor<1) return 0;
+  if(men>0) {
+    men-=(md*md)/armor;
+    if(men<0) men=0;
+    }
+  if(armor>0 && type != TROOP_MARINE && type != TROOP_ARTILLIARY) {
+    armor -= wd;
+    if(armor<0) armor=0;
+    }
+  if(armor<1) {
+/*
+    switch(type) {
+      case(TROOP_MARINE): sound[SOUND_DEATH]->Play(); break;
+      }
+*/
+    if(cls) {
+      image.SetImage(dmdth[0]);
+      image.Draw();
+      armor=0;
+      }
+    else Erase();
+    return 1;
+    }
+  if(men<1) {
+    switch(type) {
+      case(TROOP_MARINE):
+      case(TROOP_ARTILLIARY): {
+	Erase();
+	}break;
+      }
+    }
+  return 0;
+  }
+
+Troop::Troop(int s, int t, int x, int y, Troop *p) {
+  parent=p;
+  shot=NULL;
+  wrof=0; armor=1000; men=1000; maxmen=1000; target=-1;
+  xp=x; yp=y; stat=0; wstat=0; wtm=0; wsnd=-1; tsnd=-1;
+  axp=(double)xp; ayp=(double)yp;
+  side=s; type=t;
+  switch(t) {
+    case(TROOP_HLM): {
+      cls=BUILDING_HLM; image.SetImage(*buildg[cls][0]);
+      armor=1000; wtype=WEAPON_LMASER; wdam=10; wmdam=30;
+      wacc=500; wrng=120; dodge=0; speed=0; mtype=MOVEMENT_DOME;
+      }break;
+    case(TROOP_BALLISTIC_DEFENDER): {
+      cls=BUILDING_BALLISTIC_DEFENDER; image.SetImage(*buildg[cls][0]);
+      armor=1000; wtype=WEAPON_BALLISTIC; wdam=250; wmdam=125; wrof=40;
+      wacc=750; wrng=310; dodge=0; speed=0; mtype=MOVEMENT_DOME;
+      }break;
+    case(TROOP_DROPSHIP): {
+      cls=BUILDING_DROPSHIP; image.SetImage(*buildg[cls][0]);
+      armor=500; wtype=WEAPON_DEPLOY; wdam=0; wmdam=0;
+      wacc=0; wrng=0; dodge=0; speed=0; stat=100; mtype=MOVEMENT_DROP;
+      }break;
+    case(TROOP_BASE): {
+      cls=BUILDING_MILITARY_BASE; image.SetImage(*buildg[cls][0]);
+      armor=1000; wtype=WEAPON_DEPLOY; wdam=0; wmdam=0;
+      wacc=0; wrng=0; dodge=0; speed=0; mtype=MOVEMENT_DOME;
+      }break;
+    case(TROOP_MARINE): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=10; men=200; maxmen=200; wtype=WEAPON_GUN; wdam=1; wmdam=20;
+      wacc=800; wrng=45; dodge=500; speed=100; mtype=MOVEMENT_WALK;
+      }break;
+    case(TROOP_BTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=100; men=100; maxmen=100;
+      wtype=WEAPON_BALLISTIC; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=250; speed=50; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_LTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=100; men=100; maxmen=100;
+      wtype=WEAPON_LASER; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=250; speed=50; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_MTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=100; men=100; maxmen=100;
+      wtype=WEAPON_MASER; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=250; speed=50; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_BHEAVYTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=100; maxmen=100;
+      wtype=WEAPON_BALLISTIC; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=100; speed=25; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_LHEAVYTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=100; maxmen=100;
+      wtype=WEAPON_LASER; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=100; speed=25; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_MHEAVYTANK): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=100; maxmen=100;
+      wtype=WEAPON_MASER; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=100; speed=25; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_BMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=50; maxmen=100;
+      wtype=WEAPON_BALLISTIC; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=100; speed=30; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_LMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=50; maxmen=100;
+      wtype=WEAPON_LASER; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=100; speed=30; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_MMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=200; men=50; maxmen=100;
+      wtype=WEAPON_MASER; wdam=75; wmdam=35; wrof=40;
+      wacc=600; wrng=120; dodge=100; speed=30; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_BHEAVYMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=300; men=50; maxmen=100;
+      wtype=WEAPON_BALLISTIC; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=50; speed=15; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_LHEAVYMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=300; men=50; maxmen=100;
+      wtype=WEAPON_LASER; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=50; speed=15; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_MHEAVYMECH): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=300; men=50; maxmen=100;
+      wtype=WEAPON_MASER; wdam=250; wmdam=125; wrof=40;
+      wacc=700; wrng=240; dodge=50; speed=15; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_BATV): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=50; men=50; maxmen=100;
+      wtype=WEAPON_BALLISTIC; wdam=75; wmdam=35; wrof=40;
+      wacc=700; wrng=100; dodge=900; speed=500; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_LATV): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=50; men=50; maxmen=100;
+      wtype=WEAPON_LASER; wdam=75; wmdam=35; wrof=40;
+      wacc=700; wrng=100; dodge=900; speed=500; mtype=MOVEMENT_DRIVE;
+      }break;
+    case(TROOP_MATV): {
+      image.SetImage(*troopg[t]); cls=0;
+      armor=50; men=50; maxmen=100;
+      wtype=WEAPON_MASER; wdam=75; wmdam=35; wrof=40;
+      wacc=700; wrng=100; dodge=900; speed=500; mtype=MOVEMENT_DRIVE;
+      }break;
+    }
+  if(p!=NULL) p->wdam++;
+  Add();
+  }
+
+void Troop::Act() {
+  if(xp < 0 || type == TROOP_NONE) return;
+  if(armor<1) {
+    armor--;
+    if(armor > -17) {
+      image.SetImage(dmdth[-armor]);
+      image.Draw();
+      }
+    else Erase();
+    return;
+    }
+  if(target >= 0 && (trp[target]->type == TROOP_NONE || trp[target]->xp<0
+	|| (stat < 1000 && trp[target]->men<=0) || trp[target]->armor<=0))
+    target = -1;
+  switch(wtype) {
+    default: {
+      printf("Unknown WTYPE (%d)!\n", wtype);
+      exit(-1);
+      }break;
+    case(WEAPON_MASER):
+    case(WEAPON_LASER):
+    case(WEAPON_GUN): {
+      if(wtm>0) wtm--;
+      if(men<=0 || (target >= 0 && trp[target]->stat >= 1000))
+	target = -1;
+      if(men>0 && target<0) {
+	int ctr2, xd, yd, tdist, dist=1024*1024+1;
+	for(ctr2=0; ctr2<maxtr; ctr2++)  if(trp[ctr2]->side==(1-side)) {
+	  if(trp[ctr2]->type != TROOP_NONE && trp[ctr2]->stat < 1000
+		&& trp[ctr2]->xp>=0 && trp[ctr2]->men > 0
+		&& trp[ctr2]->armor > 0) {
+	    xd = (trp[ctr2]->xp)-(xp);
+	    yd = (trp[ctr2]->yp)-(yp);
+	    tdist=xd*xd+yd*yd;
+	    if(tdist<dist) { dist=tdist; target=ctr2; }
+	    }
+	  }
+	}
+      if(target>=0 && mtype != MOVEMENT_DOME
+		&& trp[target]->mtype != MOVEMENT_DOME) {
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	int dst = (int)sqrt(xd*xd+yd*yd);
+	if(dst<=wrng) {
+	  int acc = (wacc*(maxmen+men))/(maxmen+maxmen);
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*acc)/1000);
+	  if(shot != NULL) shot->Target(xp, yp, trp[target], miss(chms), wrof);
+	  else switch(wtype) {
+	    case(WEAPON_GUN): {
+	      shot=new Shot(SHOT_GUN, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_LASER): {
+	      shot=new Shot(SHOT_LASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_MASER): {
+	      shot=new Shot(SHOT_MASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_LMASER): {
+	      shot=new Shot(SHOT_LASERMASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    }
+	  if(shot->TargetDead()) { target=-1; }
+	  }
+	}
+      else if(target>=0 && mtype == MOVEMENT_DOME && stat>15) {
+	int nangle, angle = (stat-16)&63;
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	double tang = atan2(-xd, yd); tang+=M_PI;
+	tang *= 32.0 /*64/2*/; tang /= M_PI;
+	nangle = (int)tang;
+	nangle &= 63;
+	if(nangle<angle) {
+	  if(nangle+32>angle) angle+=63;
+	  else angle++;
+	  }
+	else if(nangle>angle) {
+	  if(angle+32>nangle) angle++;
+	  else angle+=63;
+	  }
+	angle &= 63;
+	int tdist=xd*xd+yd*yd;
+	if(angle == nangle && tdist <= wrng*wrng) {
+	  int dst = (int)sqrt(xd*xd+yd*yd);
+	  int acc = (wacc*(maxmen+men))/(maxmen+maxmen);
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*acc)/1000);
+	  if(shot != NULL) shot->Target(xp, yp, trp[target], miss(chms), wrof);
+	  else switch(wtype) {
+	    case(WEAPON_GUN): {
+	      shot=new Shot(SHOT_GUN, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_LASER): {
+	      shot=new Shot(SHOT_LASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_MASER): {
+	      shot=new Shot(SHOT_MASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    case(WEAPON_LMASER): {
+	      shot=new Shot(SHOT_LASERMASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	      }break;
+	    }
+	  if(shot->TargetDead()) { target=-1; }
+	  stat = angle+80;
+	  }
+	else {
+	  stat = angle+16;
+	  }
+	}
+      else if(mtype == MOVEMENT_DOME && target>=0 && stat<16) {
+	if(stat == 0) sound[SOUND_OPEN]->Play();
+	stat++;
+	}
+      else if(mtype == MOVEMENT_DOME && target<0 && stat>0) {
+	if(stat < 48) stat--;
+	else if(stat < 80) stat++;
+	else if(stat == 80) stat=16;
+	else if(stat < 112) stat-=65;
+	else if(stat < 143) stat-=63;
+	else stat=16;
+	}
+      else {
+	if(wsnd>=0) {
+	  sound[SOUND_LASER]->Stop(wsnd);
+	  wsnd = -1;
+	  }
+	}
+      }break;
+    case(WEAPON_LMASER): {
+      if(men<=0 || (target >= 0 && trp[target]->stat >= 1000))
+	target = -1;
+      if(men>0 && target<0) {
+	int ctr2, xd, yd, tdist, dist=1024*1024+1;
+	for(ctr2=0; ctr2<maxtr; ctr2++)  if(trp[ctr2]->side==(1-side)) {
+	  if(trp[ctr2]->type != TROOP_NONE && trp[ctr2]->stat < 1000
+		&& trp[ctr2]->xp>=0 && trp[ctr2]->men > 0) {
+	    xd = (trp[ctr2]->xp)-(xp);
+	    yd = (trp[ctr2]->yp)-(yp);
+	    tdist=xd*xd+yd*yd;
+	    if(tdist<dist) { dist=tdist; target=ctr2; }
+	    }
+	  }
+	}
+      if(target>=0 && mtype != MOVEMENT_DOME) {
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	int dst = (int)sqrt(xd*xd+yd*yd);
+	if(dst<=wrng) {
+	  int acc = (wacc*(maxmen+men))/(maxmen+maxmen);
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*acc)/1000);
+	  if(shot != NULL) shot->Target(xp, yp, trp[target], miss(chms), wrof);
+	  else shot=new Shot(SHOT_LASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	  if(shot->TargetDead()) { target=-1; }
+	  }
+	}
+      else if(target>=0 && mtype == MOVEMENT_DOME && stat>15) {
+	int nangle, angle = (stat-16)&63;
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	double tang = atan2(-xd, yd); tang+=M_PI;
+	tang *= 32.0 /*64/2*/; tang /= M_PI;
+	nangle = (int)tang;
+	nangle &= 63;
+	if(nangle<angle) {
+	  if(nangle+32>angle) angle+=63;
+	  else angle++;
+	  }
+	else if(nangle>angle) {
+	  if(angle+32>nangle) angle++;
+	  else angle+=63;
+	  }
+	angle &= 63;
+	int tdist=xd*xd+yd*yd;
+	if(angle == nangle && tdist <= wrng*wrng) {
+	  int dst = (int)sqrt(xd*xd+yd*yd);
+	  int acc = (wacc*(maxmen+men))/(maxmen+maxmen);
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*acc)/1000);
+	  if(shot != NULL) shot->Target(xp, yp, trp[target], miss(chms), wrof);
+	  else shot=new Shot(SHOT_LASER, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	  if(shot->TargetDead()) { target=-1; }
+	  stat = angle+80;
+	  }
+	else {
+	  stat = angle+16;
+	  }
+	}
+      else if(mtype == MOVEMENT_DOME && target>=0 && stat<16) {
+	if(stat == 0) sound[SOUND_OPEN]->Play();
+	stat++;
+	}
+      else if(mtype == MOVEMENT_DOME && target<0 && stat>0) {
+	if(stat < 48) stat--;
+	else if(stat < 80) stat++;
+	else if(stat == 80) stat=16;
+	else if(stat < 112) stat-=65;
+	else if(stat < 143) stat-=63;
+	else stat=16;
+	}
+      else {
+	if(wsnd>=0) {
+	  sound[SOUND_LASER]->Stop(wsnd);
+	  wsnd = -1;
+	  }
+	}
+      }break;
+    case(WEAPON_BALLISTIC): {
+      if(wtm>0) wtm--;
+      if(men<=0 || (target >= 0 && trp[target]->stat >= 1000))
+	target = -1;
+      if(men>0 && target<0) {
+	int ctr2, xd, yd, tdist, dist=1024*1024+1;
+	for(ctr2=0; ctr2<maxtr; ctr2++)  if(trp[ctr2]->side==(1-side)) {
+	  if(trp[ctr2]->type != TROOP_NONE && trp[ctr2]->stat < 1000
+		&& trp[ctr2]->xp>=0 && trp[ctr2]->men > 0
+		&& trp[ctr2]->armor > 0) {
+	    xd = (trp[ctr2]->xp)-(xp);
+	    yd = (trp[ctr2]->yp)-(yp);
+	    tdist=xd*xd+yd*yd;
+	    if(tdist<dist) { dist=tdist; target=ctr2; }
+	    }
+	  }
+	}
+      if(target>=0 && mtype != MOVEMENT_DOME && wtm<1) {
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	int dst = (int)sqrt(xd*xd+yd*yd);
+	if(dst<=wrng) {
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*wacc)/1000);
+	  new Shot(SHOT_BALLISTIC, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	  wtm=(wrof*(maxmen+maxmen))/(maxmen+men);
+	  }
+	}
+      else if(target>=0 && mtype == MOVEMENT_DOME && stat>15) {
+	int nangle, angle = stat-16;
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	double tang = atan2(-xd, yd); tang+=M_PI;
+	tang *= 32.0 /*64/2*/; tang /= M_PI;
+	nangle = (int)tang;
+	nangle &= 63;
+	if(nangle<angle) {
+	  if(nangle+32>angle) angle+=63;
+	  else angle++;
+	  }
+	else if(nangle>angle) {
+	  if(angle+32>nangle) angle++;
+	  else angle+=63;
+	  }
+	angle &= 63;
+	int tdist=xd*xd+yd*yd;
+	if(angle == nangle && tdist <= wrng*wrng && wtm<1) {
+	  int dst = (int)sqrt(xd*xd+yd*yd);
+	  int chms = 1000-(((1000-(trp[target]->dodge*dst)/wrng)*wacc)/1000);
+	  new Shot(SHOT_BALLISTIC, wdam, wmdam, xp, yp,
+		trp[target], miss(chms), wrof);
+	  wtm=(wrof*(maxmen+maxmen))/(maxmen+men);
+	  stat = angle+80;
+	  }
+	else stat = angle+16;
+	}
+      else if(mtype == MOVEMENT_DOME && target>=0 && stat<16) {
+	if(stat == 0) sound[SOUND_OPEN]->Play();
+	stat++;
+	}
+      else if(mtype == MOVEMENT_DOME && target<0 && stat>0) {
+	if(stat < 48) stat--;
+	else if(stat < 80) stat++;
+	else if(stat == 80) stat=16;
+	else if(stat < 112) stat-=65;
+	else if(stat < 143) stat-=63;
+	else stat=16;
+	}
+      }break;
+    case(WEAPON_DEPLOY): {
+      if(mtype == MOVEMENT_DROP && stat > 0) {
+	--stat;
+	}
+      else if(mtype == MOVEMENT_DOME && stat < 16) {
+	if(!stat) sound[SOUND_OPEN]->Play();
+	++stat;
+	}
+      else if((ticker%DROPSHIP_DELAY) == (lnum%DROPSHIP_DELAY)) {
+	if(wdam > 0) {
+	  int numd=1, ctr, drop=-1;
+	  for(ctr=0; ctr<maxtr && drop<0; ++ctr) {
+	    if(trp[ctr]->parent == this && trp[ctr]->xp<0) {
+	      switch(trp[ctr]->type) {
+		case(TROOP_MARINE):
+		case(TROOP_ARTILLIARY): numd=4; drop=ctr; break;
+		case(TROOP_MMECH):
+		case(TROOP_MATV):
+		case(TROOP_MTANK):
+		case(TROOP_LMECH):
+		case(TROOP_LATV):
+		case(TROOP_LTANK):
+		case(TROOP_BMECH):
+		case(TROOP_BATV):
+		case(TROOP_BTANK): numd=2; drop=ctr; break;
+		default: numd=1; drop=ctr; break;
+		}
+	      }
+	    }
+	  trp[drop]->xp = xp;
+	  trp[drop]->yp = yp+16;
+	  trp[drop]->axp=(double)trp[drop]->xp;
+	  trp[drop]->ayp=(double)trp[drop]->yp;
+	  trp[drop]->doing = 0;
+	  --(wdam);
+	  if(numd>1) {
+	    for(ctr=drop,drop=-1; ctr<maxtr && drop<0; ++ctr)
+	      if(trp[ctr]->parent == this && trp[ctr]->xp<0) drop=ctr;
+	    trp[drop]->xp = xp;
+	    trp[drop]->yp = yp-16;
+	    trp[drop]->axp=(double)trp[drop]->xp;
+	    trp[drop]->ayp=(double)trp[drop]->yp;
+	    trp[drop]->doing = 0;
+	    --(wdam);
+	    }
+	  if(numd>2) {
+	    for(ctr=drop,drop=-1; ctr<maxtr && drop<0; ++ctr)
+	      if(trp[ctr]->parent == this && trp[ctr]->xp<0) drop=ctr;
+	    trp[drop]->xp = xp+16;
+	    trp[drop]->yp = yp;
+	    trp[drop]->axp=(double)trp[drop]->xp;
+	    trp[drop]->ayp=(double)trp[drop]->yp;
+	    trp[drop]->doing = 0;
+	    --(wdam);
+	    for(ctr=drop,drop=-1; ctr<maxtr && drop<0; ++ctr)
+	      if(trp[ctr]->parent == this && trp[ctr]->xp<0) drop=ctr;
+	    trp[drop]->xp = xp-16;
+	    trp[drop]->yp = yp;
+	    trp[drop]->axp=(double)trp[drop]->xp;
+	    trp[drop]->ayp=(double)trp[drop]->yp;
+	    trp[drop]->doing = 0;
+	    --(wdam);
+	    }
+	  }
+	else {
+	  Erase();
+	  }
+	}
+      }break;
+    }
+  switch(mtype) {
+    default: {
+      printf("Unknown MTYPE (%d)!\n", mtype);
+      exit(-1);
+      }break;
+    case(MOVEMENT_NONE): break;
+    case(MOVEMENT_DRIVE): {
+      if(xp>=0 && men>0 && armor>0 && target >= 0) {
+	int xd = (trp[target]->xp)-(xp);
+	int yd = (trp[target]->yp)-(yp);
+	if(xd*xd+yd*yd >= (wrng)*(wrng)) {
+	  double axd = ((double)trp[target]->xp)-(axp);
+	  double ayd = ((double)trp[target]->yp)-(ayp);
+	  double dst=(double)speed/100.0;
+	  double dx=dst*cos(atan2(ayd, axd));
+	  double dy=dst*sin(atan2(ayd, axd));
+	  axp+=dx; ayp+=dy;
+	  xp=(int)axp; yp=(int)ayp;
+	  }
+	}
+      }break;
+    case(MOVEMENT_WALK): {
+      if(stat < 1000 && target >= 0 && trp[target]->mtype==MOVEMENT_DOME) {
+	int xd, yd, dst2;
+	xd = (trp[target]->xp)-(xp);
+	yd = (trp[target]->yp)-(yp);
+	dst2=xd*xd+yd*yd;
+	if(dst2<256) {
+	  image.Erase();
+	  stat = 1000;
+	  if(wsnd<0) wsnd = sound[SOUND_GUN]->Loop();
+	  }
+	}
+      if(stat >= 1000) {
+	if(target < 0 || trp[target]->type == TROOP_NONE) {
+	  Erase();
+//	  numtr[side]--;
+	  }
+	else {
+	  if(trp[target]->men > 0) {
+	    trp[target]->men-=wmdam;
+	    if(trp[target]->men <= 0) {
+	      trp[target]->men = 0;
+//	      numtr[1-side]--;
+	      }
+	    }
+	  if(trp[target]->men <= 0) {
+	    stat = 0;
+	    target = -1;
+	    doing = 0;
+	    if(wsnd>=0) {
+              sound[SOUND_GUN]->Stop(wsnd);
+              wsnd = -1;
+              }
+	    }
+	  }
+	break;
+	}
+      else if(xp>=0 && men>0 && armor>0) {
+	if(target < 0) {
+	  int ctr2, xd, yd, tdist, dist=1024*1024*2;
+	  for(ctr2=0; ctr2<maxtr; ctr2++) {
+	    if(trp[ctr2]->side==(1-side) && trp[ctr2]->men>0) {
+	      if(trp[ctr2]->type != TROOP_NONE && trp[ctr2]->men > 0) {
+		xd = (trp[ctr2]->xp)-(xp);
+		yd = (trp[ctr2]->yp)-(yp);
+		tdist=xd*xd+yd*yd;
+		if(tdist<dist) { dist=tdist; target=ctr2; }
+		}
+	      }
+	    }
+	  }
+	if(target>=0) {
+	  int xd = (trp[target]->xp)-(xp);
+	  int yd = (trp[target]->yp)-(yp);
+	  if(trp[target]->mtype==MOVEMENT_DOME
+		|| xd*xd+yd*yd >= (wrng)*(wrng)) {
+	    double axd = ((double)trp[target]->xp)-(axp);
+	    double ayd = ((double)trp[target]->yp)-(ayp);
+	    double dst=(double)speed/100.0;
+	    double dx=dst*cos(atan2(ayd, axd));
+	    double dy=dst*sin(atan2(ayd, axd));
+	    axp+=dx; ayp+=dy;
+	    xp=(int)axp; yp=(int)ayp;
+	    }
+	  }
+        }
+      }break;
+    case(MOVEMENT_DOME): {
+      }break;
+    case(MOVEMENT_DROP): {
+      }break;
+    }
+  if(type != TROOP_NONE && stat < 1000) {
+    if(cls==0) image.Move(xp, yp);
+    else {
+      image.SetImage(*buildg[cls][stat]);
+      image.Move(xp, yp);
+      }
+    }
+  }

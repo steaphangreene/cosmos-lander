@@ -1,0 +1,96 @@
+Mathematics
+    Algorithms
+    Hypergeometry
+    Differential Geometry
+    Domplex System Reduction
+    Entropy
+    Wave Theory
+    Chaos Theory
+    Signal Processing
+    Number Theory
+    Probability Theory
+Physics
+    Antimater
+	Antimator Projector
+	Antimator Torpedo Launcher
+	Anti-mass Spectromoter
+    Hyperspace Theory
+	Retromorphic Jump Drive
+	Retromorphic Hyper Drive
+	Phased Jump Drive
+	Phased Hyper Drive
+	Shell Jump Drive
+	Shell Hyper Drive
+	Hyperparticle Detector
+    Temporal Physics
+    Subatomic INteractions
+    Ultra-Densa Mater
+    Singularity Theory
+    Gravity Theory
+    Kinematics
+    Entropy Control
+    Superstring Theory
+    Dimensional Theory
+Biotech
+    Pathology
+    Agriculture
+    Human Genetics
+    Bioweapons
+    Biochem
+    Hazardous-Environment Organisms
+    Nanoorganisma
+    Hyperorganisms
+    Toxins
+Chemistry
+    Composite Materials
+    Metalics
+    Semiconductors
+    Lubricants
+    Acids & bases
+    Polimers
+    Mollecular Structures
+    Display Tech
+    Volatile Chem
+    Superconductors
+    Superfluids
+    Fuels
+Human Sciences
+    Research
+    Espionage
+	Counterespionage Consolate
+	*Deception Detector (Counters Espionage)
+	*Microsurveilance Device (Duh!)
+	*Charisma Thingy
+	*Walther PPK (Reduces Chance of losing spies).
+    Habitation
+	Megaplex
+	Ultraplex
+	*Waste Recycling (More people/area)
+    Government
+	*Direct Democracy (Increases Happiness and Security)
+	*Beurocatic Automation (Increases Money Earnings)
+    Civil Eng.
+	Integrated Mass Transit (Fewer people REQUIRED/building)
+    Leadership
+	*Royal Guard (Increases Security)
+    History
+	*Historical Figure
+	*Prophecy
+    Population Control
+	Cloning Facility (Adds fixed value to birth rate)
+    Psychological Wareware
+	*Propoganda (Raises the "attractiveness" of user's civilization)
+	*Demoralization (Lowers happiness on enemy planes near friendly ships)
+    Behavioral Engineering
+	Brainwashing (
+	*Conversion (Convert Foreign Planetary Population)
+	*Patriotism (Counters Conversion)
+Engineering
+    Reverse Eng
+    Control Systems
+    Hulls
+    Satellites
+    Mass Production
+    Reengineering
+    Automation
+    Planetary Engineering

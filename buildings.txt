@@ -1,0 +1,63 @@
+-Weapons
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10M	100	-20	0	-10K	LW	Antimater Projector
+10M	100	-20	0	-10K	LW	Balistic Defender
+10M	100	0	0	-10K	LW	Antiorbital Maser
+10M	100	0	0	-10K	L	High-Precision Laser
+10M	100	0	0	-10K	L	Heavy Laser-Maser
+10M	100	0	0	-10K	LW	Military Base
+10M	100	0	0	-10K	LW	Fortress
+
+-Sheilds
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10M	1K	0	0	-10K	L	Kinetic Inverter
+10M	1K	0	0	-10K	LW	Elecromagnetic Medium Void
+10M	1K	0	0	-10K	L	Elecromagnetic Repulsor
+10M	1K	0	0	-10K	L	Microkinetic Nullifier
+10M	1K	0	0	-10K	LW	Projectile Interceptor
+
+-Sensors
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10M	10	0	0	-10K	L	Space Observatory
+10M	10	0	0	-10K	L	Stellar Radiation Analysis Lab
+
+-Power Stations
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10M	0	0	0	100K	L	Instelation Collector
+10M	0	0	0	200K	W	Fluid-Motion Generator
+10M	-10	-10	0	500K	LW	Antimater Station
+10M	-10	-20	0	1M	LW	Fission-Fusion Reactor
+
+-Population Structures
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10G	0	10	10	-10K	LW	Residential Megaplex
+1G	0	10	100	-10K	LW	Industrial Megaplex
+1G	0	100	10	-10K	LW	Commercial Megaplex
+1G	0	1000	-10	-100K	L	Public Media Centre
+
+-Construction Structures
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+10M	0	0	0	-100K	LW	Ship Design Facility
+10M	0	0	0	-100K	LW	Shipyard
+10M	0	0	0	-100K	LW	Satellite Production Plant
+10M	0	0	0	-100K	LW	Colony Maker
+10M	10	0	0	-100K	LW	Military Production Line
+
+-Research Structures
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+100M	0	10	10	-10K	LW	Biotech University
+100M	0	10	10	-10K	LW	Astrophysics University
+100M	0	10	10	-10K	LW	Chemistry University
+100M	0	10	10	-10K	LW	Material Science University
+100M	10	0	10	-10K	LW	Military School
+10M	0	0	0	-10K	LW	Theoretical Metaphysics Lab
+10M	0	0	0	-10K	LW	Particle Physics Lab
+10M	0	0	0	-10K	LW	Electromagnetic Physics Lab
+10M	0	0	0	-10K	LW	Subatomic Physics Lab
+10M	0	0	0	-10K	LW	Volatile Chemicals Lab
+
+-Special
+#Pop	Secur.	Enter.	Indust.	Power	Flags	Name
+100M	-10	10	0	-10K	L	Spaceport
+10M	0	0	0	-10K	L	Power Projector
+10M	0	0	0	-10K	LW	Fighter Hanger
