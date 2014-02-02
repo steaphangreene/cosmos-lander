@@ -1,7 +1,7 @@
-CFLAGS:=$(shell U2-CFlgs)
-LIBS=	$(shell U2-Libs)
+CFLAGS:=$(shell ../../../user/U2-CFlgs)
+LIBS=	$(shell ../../../user/U2-Libs)
 CC=     gcc -O3 -s -Wall $(CFLAGS)
-USER=	$(shell U2-Dir)
+USER=	$(shell ../../../user/U2-Dir)
 DEPS=   $(USER)/*.cpp
 DEPH=   $(USER)/*.h
 ALL=    $(DEPS) $(DEPH) Makefile

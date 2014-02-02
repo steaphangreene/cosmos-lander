@@ -2,8 +2,8 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <user.h>
 #include <zlib.h>
+#include "../../../user/user.h"
 
 static int NUM_FRAMES=144;
 
