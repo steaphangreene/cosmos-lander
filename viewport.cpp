@@ -566,7 +566,6 @@ void ViewPort::Click(int x, int y, int b)  {
 	plan[planet]->PutBuilding(x, y, BUILDING_NONE, NULL);
 	}
       }
-//*****************
 //    else if(stat==VPSTAT_ATTACK) {
 //      int del;
 //      for(del=0; del<MAX_SHIPS*MAX_DROPSHIPS; ++del) {
@@ -608,7 +607,6 @@ void ViewPort::Click(int x, int y, int b)  {
 	plan[planet]->items[x][y].Move((x<<5)+16, (y<<5)+16);
 	}
       else if(stat == VPSTAT_ATTACK) {
-//***********
 //	int ctr;
 //	for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
 //	  if((x<<5)+16==attx[ctr] && (y<<5)+16==atty[ctr]) {
@@ -732,8 +730,8 @@ Debug("POST");
 
 void ViewPort::SavePlan(FILE *fl) {
   exit(1);
-/***************
-  int ctr, tp1=-1, tp2=-1;  
+/*
+  int ctr, tp1=-1, tp2=-1;
   for(ctr=0; ctr<MAX_SHIPS*MAX_DROPSHIPS; ++ctr) {
     if(attackers[ctr].contains[0] != NULL)
 	tp1 = attackers[ctr].contains[0]->type;
