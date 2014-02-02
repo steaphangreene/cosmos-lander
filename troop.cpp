@@ -617,7 +617,7 @@ void Troop::Act() {
 		double nxrad=(iaxp-dxp), nyrad=(iayp-dyp);
 #define sq(x) ((x)*(x))
 		double ldst=dst-sqrt(sq(iaxp-oxp)+sq(iayp-oyp));
-#undef sq(x)
+#undef sq
 		if(ldst>0.0) {
 		  ldst /= 16.0;
 		  if((atan2(yrad, xrad) > atan2(oyrad, oxrad)
@@ -718,7 +718,7 @@ void Troop::Act() {
 		double nxrad=(iaxp-dxp), nyrad=(iayp-dyp);
 #define sq(x) ((x)*(x))
 		double ldst=dst-sqrt(sq(iaxp-oxp)+sq(iayp-oyp));
-#undef sq(x)
+#undef sq
 		if(ldst>0.0) {
 		  ldst /= 16.0;
 		  if((atan2(yrad, xrad) > atan2(oyrad, oxrad)

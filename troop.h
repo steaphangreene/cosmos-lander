@@ -69,7 +69,7 @@ extern Graphic *troopimg[TROOP_MAX];
 class Shot;
 
 struct TroopStats {
-  char *name;
+  const char *name;
   int cls, type, mtype, wtype, modnum;
   int men, maxmen, armor, dodge, speed;
   int wdam, wmdam, wrng, wacc, wrof;

@@ -627,13 +627,12 @@ void ViewPort::Click(int x, int y, int b)  {
 	attpsp[tsel[stat]][psel[stat][tsel[stat]]]->
 	  Move((x<<5)+16, (y<<5)+16);
 
-	int po=poff[stat][tsel[stat]], ps=psel[stat][tsel[stat]];
+	int ps=psel[stat][tsel[stat]];
 	++ps; ps%=pnum[stat][tsel[stat]];
 	for(; ps != psel[stat][tsel[stat]]; ++ps,ps%=pnum[stat][tsel[stat]])
 	  if(ship[player][tsel[stat]]->DropX(ps)<0) break;
 	if(ps == psel[stat][tsel[stat]]) {
 	  ++tsel[stat]; tsel[stat]%=tnum[stat];
-	  po=poff[stat][tsel[stat]];
 	  for(ps=0; ps<pnum[stat][tsel[stat]]; ++ps)
 	    if(ship[player][tsel[stat]]->DropX(ps)<0) break;
 	  }
