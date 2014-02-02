@@ -4,7 +4,7 @@
 #define MAX_SHIPS 16
 #define MAX_DROPSHIPS 16
 
-#include <user.h>
+#include "../user/user.h"
 
 #include "cosmos.h"
 #include "shipitem.h"

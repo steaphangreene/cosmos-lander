@@ -3,7 +3,7 @@
 
 #define MAX_PLANETS 1024
 
-#include <user.h>
+#include "../user/user.h"
 #include "planet.h"
 #include "sounds.h"
 

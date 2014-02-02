@@ -22,11 +22,11 @@ int Game::Initialize() {
   ptype[0] = PLAYER_CONSOLE;
   ptype[1] = PLAYER_COMPUTER;
   numships = new int[numplayers];
-  ship = new (Ship**)[numplayers];
+  ship = new Ship**[numplayers];
   for(ctr=0; ctr<numplayers; ++ctr) {
     if(ctr==0) ptype[ctr] = PLAYER_CONSOLE;
     else ptype[ctr] = PLAYER_COMPUTER;
-    ship[ctr] = new (Ship*)[MAX_SHIPS];
+    ship[ctr] = new Ship*[MAX_SHIPS];
     for(ctr2=0; ctr2<MAX_SHIPS; ++ctr2) ship[ctr][ctr2]=NULL;
     numships[ctr] = 9;
     for(ctr2=0; ctr2<numships[ctr]; ++ctr2) {

@@ -1,5 +1,7 @@
 #include <string.h>
 #include <math.h>
+#include <algorithm>
+using std::max;
 
 #include "cosmos.h"
 #include "viewport.h"
@@ -134,18 +136,18 @@ ViewPort::ViewPort() {
     poff[VPSTAT_BUILD][2]=BUILDING_WEAPON_MAX;
     if(ctr<BUILDING_MISC_MAX) {
       ind=ctr;
-      int pn=(pnum[VPSTAT_BUILD][0]-1)>?1;
+      int pn=max(pnum[VPSTAT_BUILD][0]-1, 1);
       pane[VPSTAT_BUILD][ctr].Position(BAR_X, BAR_Y+(PANE_SPREAD*ind)/pn);
       pane[VPSTAT_BUILD][ctr].Remove();
       }
     else if(ctr<BUILDING_WEAPON_MAX) {
-      int pn=(pnum[VPSTAT_BUILD][1]-1)>?1;
+      int pn=max(pnum[VPSTAT_BUILD][1]-1, 1);
       ind=ctr-BUILDING_MISC_MAX;
       pane[VPSTAT_BUILD][ctr].Position(BAR_X, BAR_Y+(PANE_SPREAD*ind)/pn);
       pane[VPSTAT_BUILD][ctr].Remove();
       }
     else if(ctr<BUILDING_GENERATOR_MAX) {
-      int pn=(pnum[VPSTAT_BUILD][2]-1)>?1;
+      int pn=max(pnum[VPSTAT_BUILD][2]-1, 1);
       ind=ctr-BUILDING_WEAPON_MAX;
       pane[VPSTAT_BUILD][ctr].Position(BAR_X, BAR_Y+(PANE_SPREAD*ind)/pn);
       pane[VPSTAT_BUILD][ctr].Remove();
@@ -167,7 +169,7 @@ ViewPort::ViewPort() {
     g2->PasteGraphic(troopimg[TROOP_DROPSHIP], 3, 3);
     for(ctrd=0; ctrd<MAX_DROPSHIPS; ++ctrd) {
       int ind=ctrd+MAX_DROPSHIPS*ctr;
-      int pn=(pnum[VPSTAT_ATTACK][0]-1)>?1;
+      int pn=max(pnum[VPSTAT_ATTACK][0]-1, 1);
       pane[VPSTAT_ATTACK][ind].SetImage(g2);
       pane[VPSTAT_ATTACK][ind].DisableCollisions();
       pane[VPSTAT_ATTACK][ind].SetPriority(10000+ctr);
@@ -248,9 +250,11 @@ void ViewPort::Update()  {
 	for(ctr=0; ctr<pmax[ostat]; ++ctr) {
 	  pane[ostat][ctr].Remove();
 	  }
-	if(ostat == VPSTAT_ATTACK) for(ctr=0; ctr<tmax[ostat]; ++ctr) {
-	  for(ctr2=0; ctr2<pnum[ostat][ctr]; ++ctr2) {
-	    attpsp[ctr][ctr2]->Erase();
+	if(ostat == VPSTAT_ATTACK) {
+	  for(ctr=0; ctr<tmax[ostat] && ctr<numships[player]; ++ctr) {
+	    for(ctr2=0; ctr2<pnum[ostat][ctr]; ++ctr2) {
+	      if(attpsp[ctr][ctr2]) attpsp[ctr][ctr2]->Erase();
+	      }
 	    }
 	  }
 	for(ctr=0; ctr<tmax[ostat]; ++ctr) {
@@ -409,7 +413,7 @@ void ViewPort::Key(int k)  {
 
 void ViewPort::Click(int x, int y, int b)  {
   int ctr1, ctr2;
-  int pn=(pnum[stat][tsel[stat]]-1)>?1;
+  int pn=max(pnum[stat][tsel[stat]]-1, 1);
   if(x >= BAR_X && y >= BAR_Y) {
     if(stat==VPSTAT_BUILD) {
       int ps=psel[stat][tsel[stat]];
@@ -744,7 +748,7 @@ void ViewPort::LoadPlan(FILE *fl) {
   int ctrs, ctrd, tp1, tp2, ax, ay;
   for(ctrs=0; ctrs<MAX_SHIPS; ++ctrs) {
     for(ctrd=0; ctrd<MAX_DROPSHIPS; ++ctrd) {
-      int pn=(pnum[VPSTAT_ATTACK][0]-1)>?1;
+      int pn=max(pnum[VPSTAT_ATTACK][0]-1, 1);
       fscanf(fl, "%d %d %d %d\n", &ax, &ay, &tp1, &tp2);
       if(ship[player][ctrs]) {
 	ship[player][ctrs]->MoveDrop(ctrd, ax, ay);

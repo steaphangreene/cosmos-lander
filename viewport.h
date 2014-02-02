@@ -1,7 +1,7 @@
 #ifndef COSMOS_VIEWPORT_H
 #define COSMOS_VIEWPORT_H
 
-#include <user.h>
+#include "../user/user.h"
 
 #define VPMODE_PLANET	0
 #define VPMODE_SYSTEM	1

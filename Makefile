@@ -1,7 +1,7 @@
-CFLAGS:=$(shell U2-CFlags)
-LIBS=	$(shell U2-Libs)
+CFLAGS:=$(shell ../user/U2-CFlags)
+LIBS=	$(shell ../user/U2-Libs)
 CC=     gcc $(CFLAGS)
-USER=	$(shell U2-Dir)
+USER=	$(shell ../user/U2-Dir)
 DEPS=   $(USER)/*.cpp
 DEPH=   $(USER)/*.h
 OBJS=   ship.o viewport.o planet.o game.o troop.o shot.o

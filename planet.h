@@ -1,7 +1,7 @@
 #ifndef COSMOS_PLANET_H
 #define COSMOS_PLANET_H
 
-#include <user.h>
+#include "../user/user.h"
 
 #define MAX_PLANET_NAME 64
 
@@ -66,7 +66,7 @@
 #define TERRAIN_LAND	1
 #define TERRAIN_WATER	2
 
-#include "cosmos.h" 
+#include "cosmos.h"
 
 struct TroopStats;
 

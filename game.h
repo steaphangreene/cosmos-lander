@@ -1,7 +1,7 @@
 #ifndef COSMOS_GAME_H
 #define COSMOS_GAME_H
 
-#include <user.h>
+#include "../user/user.h"
 
 #include "cosmos.h"
 #include "planet.h"
